@@ -42,3 +42,7 @@ for Meteor / Minecraft 1.21.11. Supplied jar SHA-256:
 Its CC0 license is preserved verbatim in `licenses/Region-Map-CC0.txt`.
 This is the separately supplied region/shard map, rather than MVADDON's excluded
 RegionMap implementation. No Meteor runtime or duplicate addon is bundled.
+
+GitHub build and publishing workflow copied from the official LiquidBounce addon
+template at commit ea2acab05d8aaa0e1f07e18280d2114ac5de4174:
+https://github.com/CCBlueX/LiquidBounce-Addon-Template/blob/ea2acab05d8aaa0e1f07e18280d2114ac5de4174/.github/workflows/build.yml

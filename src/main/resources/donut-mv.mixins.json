@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.mulveo.mvaddon.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["ChunkScannerCameraMixin", "ChunkScannerNetworkMixin", "TridentItemMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

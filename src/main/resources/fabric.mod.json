@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "donut-addon",
+  "version": "${version}",
+  "name": "Donut Addon by Razzy",
+  "description": "Donut Addon v 1 by Razzy.",
+  "authors": ["Razzy"],
+  "license": ["GPL-3.0-or-later", "CC0-1.0", "LicenseRef-MV-Addon", "LicenseRef-StashHunting"],
+  "environment": "client",
+  "entrypoints": { "liquidbounce": ["dev.donut.addon.DonutAddon"] },
+  "mixins": ["donut-addon.mixins.json", "donut-mv.mixins.json", "donut-mv-events.mixins.json"],
+  "accessWidener": "donut-addon.accesswidener",
+  "depends": {
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabricloader": ">=${loader_version}",
+    "fabric-language-kotlin": ">=${fabric_kotlin_version}",
+    "liquidbounce": "0.41.0"
+  },
+  "custom": { "liquidbounce": { "color": "#D89A58" }, "modmenu": { "parent": "liquidbounce" } }
+}

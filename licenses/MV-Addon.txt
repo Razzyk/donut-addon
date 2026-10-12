@@ -1,0 +1,20 @@
+MV ADDON SOURCE AND BINARY LICENSE
+
+Copyright (c) 2026 Mulveo and Laith. All rights reserved.
+
+This license applies to MV Addon and its original and bundled module code,
+including code previously published by the same creator under the name vrzt.
+
+Permission is granted to use the compiled MV Addon privately with Minecraft
+and Meteor Client. Redistribution, resale, sublicensing, publication of the
+source code, or creation and distribution of derivative builds is prohibited
+without prior written permission from the copyright holders.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+Bundled font files remain under their respective SIL Open Font Licenses and
+are not relicensed by this notice.

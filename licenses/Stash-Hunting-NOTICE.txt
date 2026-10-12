@@ -1,0 +1,16 @@
+Source attribution for GrimAirPlace
+
+Source project: miles352/meteor-stashhunting-addon (Jefff's Mods)
+Author attribution in the source project: jefff
+Requested branch: 1.21.1
+Exact source commit: 5f4c8d08b1d0f46c8d54998713217f72bb18f8da
+https://github.com/miles352/meteor-stashhunting-addon/tree/5f4c8d08b1d0f46c8d54998713217f72bb18f8da
+
+Adapted source files:
+- src/main/java/com/stash/hunt/modules/GrimAirPlace.java
+
+The referenced branch does not include a LICENSE file or declare a license in its
+Fabric metadata. No additional upstream license text was available to preserve.
+This attribution notice does not relicense the adapted upstream material under
+the surrounding project's GPL notice. ElytraFlyPlusPlus and its flight hooks were
+removed in version 1.3.0.

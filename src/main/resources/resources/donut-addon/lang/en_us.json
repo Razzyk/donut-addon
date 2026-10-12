@@ -1,0 +1,5 @@
+{
+  "liquidbounce.module.donutNofall.name": "Donut Nofall",
+  "liquidbounce.module.donutNofall.description": "SlimefunHelper NoFall Test 2 landing correction.",
+  "liquidbounce.module.grimGroundVelocity.description": "Legacy Grim velocity restricted to grounded hits."
+}

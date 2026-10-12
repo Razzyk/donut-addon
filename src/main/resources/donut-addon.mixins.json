@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.donut.addon.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["LocalPlayerAccessor", "MixinClientPacketListener", "MixinLivingEntity"],
+  "injectors": { "defaultRequire": 1 }
+}

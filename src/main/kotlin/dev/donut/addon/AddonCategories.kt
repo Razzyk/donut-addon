@@ -6,5 +6,5 @@ import net.ccbluex.liquidbounce.features.module.ModuleCategory
 object AddonCategories {
     @JvmField val DONUT = ModuleCategory("Donut")
     @JvmField val BASEFINDING = ModuleCategory("Basefinding")
-    @JvmField val UTILITY = ModuleCategory("MV Utility")
+    @JvmField val UTILITY = ModuleCategory("Donut Utility")
 }

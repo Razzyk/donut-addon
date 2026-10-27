@@ -1,5 +1,6 @@
 package dev.donut.addon.modules
 
+import dev.donut.addon.AutoReflyState
 import dev.donut.addon.GlideResetState
 import dev.donut.addon.Gliding
 import dev.donut.addon.mixin.LivingEntityAccessor
@@ -21,8 +22,11 @@ import net.minecraft.world.item.ItemStack
 object ModuleUnbreakableElytra : ClientModule("UnbreakableElytra", AddonCategories.DONUT) {
     private val period by int("Period", 16, 1..19, "ticks")
     private val resetVanilla by boolean("ResetVanilla", false)
+    private val autoReFly by boolean("AutoReFly", false)
+    private val refly = AutoReflyState()
     private val transaction = GlideResetState()
     private var owner: LocalPlayer? = null
+    private var ownerWorld: Any? = null
     private var counter = 0
     private var movedElytra = ItemStack.EMPTY
 
@@ -37,15 +41,18 @@ object ModuleUnbreakableElytra : ClientModule("UnbreakableElytra", AddonCategori
 
     override fun onDisabled() {
         counter = 0
+        refly.reset()
         cleanupTick()
     }
 
     private fun ensureOwner() {
-        if (owner !== mc.player) {
+        if (owner !== mc.player || ownerWorld !== mc.level) {
+            refly.reset()
             transaction.finish()
             counter = 0
             movedElytra = ItemStack.EMPTY
             owner = mc.player
+            ownerWorld = mc.level
         }
     }
 
@@ -74,7 +81,8 @@ object ModuleUnbreakableElytra : ClientModule("UnbreakableElytra", AddonCategori
         movedElytra = ItemStack.EMPTY
         counter = 0
         if (enabled && Gliding.canContinue(current)) {
-            Gliding.start(current)
+            // Restore the chest before attempting a rate-limited restart.
+            if (!autoReFly || !refly.isPending) Gliding.start(current)
         } else if (!Gliding.canContinue(current)) {
             current.stopFallFlying()
         }
@@ -83,7 +91,12 @@ object ModuleUnbreakableElytra : ClientModule("UnbreakableElytra", AddonCategori
     @Suppress("unused")
     private val tick = handler<PlayerPostTickEvent> {
         ensureOwner()
-        if (transaction.isPending) return@handler
+        val canRefly = player.isAlive && Gliding.canContinue(player)
+        if (refly.shouldStart(
+                player.tickCount, autoReFly, canRefly,
+                Gliding.isUsable(player.getItemBySlot(EquipmentSlot.CHEST)), transaction.isPending, player.isFallFlying
+            )) Gliding.start(player)
+        if (transaction.isPending || refly.isPending) return@handler
         val chest = player.getItemBySlot(EquipmentSlot.CHEST)
         if (!player.isFallFlying || !Gliding.canContinue(player) ||
             !Gliding.isUsable(chest) || chest.has(DataComponents.UNBREAKABLE)) {
@@ -140,15 +153,19 @@ object ModuleUnbreakableElytra : ClientModule("UnbreakableElytra", AddonCategori
     @JvmStatic
     fun preserveGlideFlag(entityId: Int, values: List<SynchedEntityData.DataValue<*>>): List<SynchedEntityData.DataValue<*>> {
         val current = mc.player ?: return values
-        if (!running || owner !== current || entityId != current.id || !transaction.isPending ||
-            !current.isFallFlying || !Gliding.canContinue(current)) return values
+        if (!running || owner !== current || ownerWorld !== mc.level || entityId != current.id) return values
         return values.map { value ->
             // Entity's shared byte flags are metadata 0; bit 7 is fall flying in 26.3.
-            if (value.id() == 0 && value.value() is Byte && (value.value() as Byte).toInt() and 128 == 0) {
-                transaction.serverStopped()
-                SynchedEntityData.DataValue(
-                    value.id(), EntityDataSerializers.BYTE, ((value.value() as Byte).toInt() or 128).toByte()
-                )
+            if (value.id() == 0 && value.value() is Byte) {
+                val flags = (value.value() as Byte).toInt()
+                val serverFlying = flags and 128 != 0
+                refly.serverFlag(autoReFly, serverFlying, current.isFallFlying)
+                if (!serverFlying && transaction.isPending && current.isFallFlying && Gliding.canContinue(current)) {
+                    transaction.serverStopped()
+                    SynchedEntityData.DataValue(
+                        value.id(), EntityDataSerializers.BYTE, (flags or 128).toByte()
+                    )
+                } else value
             } else value
         }
     }

@@ -4,6 +4,8 @@ Module algorithms adapted from m1919810's SlimefunHelper (CC0-1.0):
 https://github.com/m1919810/SlimefunHelper/tree/fe5ed1545d7b607746d038a8523da08f0b6753aa
 
 - NoFall.java: NoFallFuckGrimTest2 (the source also credits the LeavesHack author).
+- ElytraJump.java: silent rotation-assisted elytra jumping.
+- ElytraExtra.java: the extracted UnbreakableElytra glide-reset behavior.
 - Velocity.java and FakeBlockManager.java: legacy grounded Grim velocity and action acknowledgements.
 
 Build scaffolding adapted from CCBlueX's LiquidBounce-Addon-Template (GPL-3.0-or-later):
@@ -46,3 +48,11 @@ RegionMap implementation. No Meteor runtime or duplicate addon is bundled.
 GitHub build and publishing workflow copied from the official LiquidBounce addon
 template at commit ea2acab05d8aaa0e1f07e18280d2114ac5de4174:
 https://github.com/CCBlueX/LiquidBounce-Addon-Template/blob/ea2acab05d8aaa0e1f07e18280d2114ac5de4174/.github/workflows/build.yml
+
+StorageESP+ block-state discovery was adapted from the user-supplied
+`storageespbypass(1).jar` (Storage Visualiser 0.1.0 for Meteor / Minecraft
+1.21.11), by kritikal. Supplied JAR SHA-256:
+`4f8e3e1cabb0539f1d9561688d694fc49defed1c340ad537391cd37219affdee`.
+Its CC0 license is preserved in `licenses/Storage-Visualiser-CC0.txt`.
+The port uses bounded client-thread scans and the existing StorageESP+ renderer;
+the original JAR and Meteor runtime are not bundled.

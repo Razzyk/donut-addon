@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     alias(libs.plugins.fabric.loom)
     alias(libs.plugins.kotlin.jvm)
@@ -114,3 +116,61 @@ tasks.jar {
 tasks.test {
     useJUnitPlatform()
 }
+
+// Ports use reviewed source; supplied binaries stay outside source and resources.
+val verifySourceIsolation = tasks.register("verifySourceIsolation") {
+    group = "verification"
+    description = "Rejects executable input artifacts in addon sources and local libraries."
+    doLast {
+        // All project-local source roots (including tests) and local dependency
+        // directories are checked before any compilation or test execution.
+        val sourceRoots = listOf("src", "libs", "lib").map(::file).filter { it.exists() }
+        val forbiddenExtensions = setOf(
+            "jar", "class", "dll", "so", "dylib", "exe", "bin", "scr", "com"
+        )
+        val forbidden = sourceRoots.flatMap { root -> root.walkTopDown().filter { it.isFile }.filter { file ->
+            val extension = file.extension.lowercase()
+            if (extension in forbiddenExtensions) return@filter true
+            // Catch executable files disguised as ordinary resource formats.
+            val header = file.inputStream().use { stream ->
+                stream.readNBytes(4)
+            }
+            header.contentEquals(byteArrayOf(0xCA.toByte(), 0xFE.toByte(), 0xBA.toByte(), 0xBE.toByte())) ||
+                header.contentEquals(byteArrayOf(0x7F, 0x45, 0x4C, 0x46)) ||
+                header.take(2) == listOf(0x4D.toByte(), 0x5A.toByte()) ||
+                header.contentEquals(byteArrayOf(0x50, 0x4B, 0x03, 0x04))
+        }.map { it.relativeTo(projectDir).path }.toList() }
+        check(forbidden.isEmpty()) {
+            "Executable input files in addon source roots: " +
+                forbidden.joinToString(", ")
+        }
+    }
+}
+
+tasks.matching {
+    it.name in setOf("compileKotlin", "compileJava", "processResources", "jar")
+}.configureEach {
+    dependsOn(verifySourceIsolation)
+}
+
+// Check the produced jar as well as the source directories, including when a
+// previously built archive was considered up-to-date by Gradle.
+val verifyAddonPackage = tasks.register("verifyAddonPackage") {
+    group = "verification"
+    dependsOn(tasks.named("jar"))
+    doLast {
+        val archive = tasks.named<Jar>("jar").get().archiveFile.get().asFile
+        ZipFile(archive).use { zip ->
+            val forbiddenExtensions = setOf("jar", "dll", "so", "dylib", "exe", "bin")
+            val rejected = zip.entries().asSequence().filter { !it.isDirectory }.map { it.name }
+                .filter { path ->
+                    val name = path.lowercase()
+                    name.substringAfterLast('.', "") in forbiddenExtensions
+                }.toList()
+            check(rejected.isEmpty()) {
+                "Executable input content in addon jar: " + rejected.joinToString(", ")
+            }
+        }
+    }
+}
+tasks.named("assemble") { dependsOn(verifyAddonPackage) }

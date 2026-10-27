@@ -9,7 +9,7 @@ object MVFeatures {
     val modules: List<Module> by lazy {
         listOf(
             AHSniper(), SusChunkFinder(), Basefinder(), OpBoatFlyPhase(), ChunkScanner(),
-            Home(), HomeRelog(), AutoRelog(), SpawnerFinder(), PlayerDetect(), WeatherNoti(),
+            Home(), SpawnerFinder(), PlayerDetect(), WeatherNoti(),
             AmethystEsp(), ChunkFinder(), StorageEspPlus(), TridentUtil(), mv1(),
             BypassAutoFlyDependency(), BypassBoatVoidFlyDependency()
         ).also { list -> list.forEach { Modules.get().add(it) } }

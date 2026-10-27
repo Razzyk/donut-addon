@@ -6,6 +6,8 @@ import dev.donut.addon.mv.compat.events.game.GameLeftEvent
 import dev.donut.addon.mv.compat.events.game.ReceiveMessageEvent
 import dev.donut.addon.mv.compat.events.world.TickEvent
 import dev.donut.addon.mv.compat.events.world.ChunkDataEvent
+import dev.donut.addon.mv.compat.events.world.StorageBlocksChangedEvent
+import dev.donut.addon.mv.compat.events.world.StorageChunkUnloadedEvent
 import dev.donut.addon.mv.compat.events.render.Render3DEvent
 import dev.donut.addon.mv.compat.systems.modules.Modules
 import dev.donut.addon.mv.compat.utils.misc.Keybind
@@ -13,7 +15,6 @@ import dev.donut.addon.mv.compat.utils.render.RenderUtils
 import net.ccbluex.liquidbounce.event.EventListener
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.event.events.*
-import net.ccbluex.liquidbounce.utils.client.ServerObserver
 import net.minecraft.client.Minecraft
 import net.minecraft.world.level.chunk.status.ChunkStatus
 
@@ -26,13 +27,11 @@ object MVEventBridge : EventListener {
     /** Login tail runs after both the world and local player have been installed. */
     @JvmStatic
     fun joinedServer() {
-        Modules.get().reconnect().connected(ServerObserver.serverInfo)
         bus.post(GameJoinedEvent())
     }
 
     @Suppress("unused")
     private val tick = handler<GameTickEvent> {
-        Modules.get().reconnect().tick()
         for (module in Modules.get().all) {
             for (setting in module.settings.all) {
                 if (setting.kind != "keybind") continue
@@ -51,12 +50,6 @@ object MVEventBridge : EventListener {
         }
     }
     @Suppress("unused")
-    private val connect = handler<ServerConnectEvent> { event ->
-        Modules.get().reconnect().lastServerConnection = event.serverInfo
-    }
-    @Suppress("unused")
-    private val disconnect = handler<DisconnectEvent> { Modules.get().reconnect().disconnected() }
-    @Suppress("unused")
     private val packet = handler<PacketEvent> { event ->
         val source = if (event.origin == TransferOrigin.INCOMING)
             dev.donut.addon.mv.compat.events.packets.PacketEvent.Receive(event.packet)
@@ -69,6 +62,20 @@ object MVEventBridge : EventListener {
         mc.level?.chunkSource?.getChunk(event.x, event.z, ChunkStatus.FULL, false)?.let {
             bus.post(ChunkDataEvent(it))
         }
+    }
+    @Suppress("unused")
+    private val blockChange = handler<BlockChangeEvent> { event ->
+        bus.post(StorageBlocksChangedEvent(mapOf(event.blockPos.immutable() to event.newState)))
+    }
+    @Suppress("unused")
+    private val blockDelta = handler<ChunkDeltaUpdateEvent> { event ->
+        val changes = mutableMapOf<net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState>()
+        event.packet.runUpdates { pos, state -> changes[pos.immutable()] = state }
+        bus.post(StorageBlocksChangedEvent(changes))
+    }
+    @Suppress("unused")
+    private val chunkUnload = handler<ChunkUnloadEvent> { event ->
+        bus.post(StorageChunkUnloadedEvent(event.pos))
     }
     @Suppress("unused")
     private val render = handler<WorldRenderEvent> { event ->

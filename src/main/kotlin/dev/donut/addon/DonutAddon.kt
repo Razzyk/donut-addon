@@ -1,8 +1,12 @@
 package dev.donut.addon
 
 import dev.donut.addon.modules.ModuleDonutNofall
+import dev.donut.addon.modules.ModuleElytraJump
 import dev.donut.addon.modules.ModuleGrimGroundVelocity
+import dev.donut.addon.modules.ModuleUnbreakableElytra
 import net.ccbluex.liquidbounce.event.EventListener
+import net.ccbluex.liquidbounce.event.events.PlayerTickEvent
+import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.addon.LiquidBounceAddon
 import net.ccbluex.liquidbounce.features.module.ModuleCategory
 import dev.donut.addon.mv.MVFeatures
@@ -23,16 +27,18 @@ class DonutAddon : LiquidBounceAddon() {
     override fun onInitialize() {
         registerModules(
             ModuleDonutNofall,
+            ModuleElytraJump,
+            ModuleUnbreakableElytra,
             ModuleGrimGroundVelocity,
             ModuleGrimAirPlace,
             ModuleRegionMap
         )
         registerModules(*MVFeatures.modules.toTypedArray())
         LightCache.register()
-        registerListeners(ServerFlightPermissions, MVEventBridge)
+        registerListeners(ElytraRestoreListener, ServerFlightPermissions, MVEventBridge)
         registerHud(RegionMapHudComponent)
         registerHud(SpeedometerHudComponent)
-        logger.info("Donut Addon by Razzy loaded for LiquidBounce 0.41.0 / Minecraft 26.3")
+        logger.info("Donut addon loaded for LiquidBounce 0.41.0 / Minecraft 26.3")
     }
 
     override fun onStarted() {
@@ -57,5 +63,13 @@ private class HudRegistration(private val component: NativeHudComponent) : Event
         if (component.base === ModuleHud.components) ModuleHud.components.drop(component)
         component.unregister()
         super.unregister()
+    }
+}
+
+/** Finish an inventory transaction even if the user disables its module mid-swap. */
+private object ElytraRestoreListener : EventListener {
+    @Suppress("unused")
+    private val tick = handler<PlayerTickEvent>(priority = 100) {
+        ModuleUnbreakableElytra.cleanupTick()
     }
 }

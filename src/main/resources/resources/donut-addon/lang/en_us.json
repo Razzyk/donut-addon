@@ -1,4 +1,5 @@
 {
+  "liquidbounce.module.antiLeak.description": "Makes deepslate textures face the same way to hide their position-based pattern.",
   "liquidbounce.module.donutNofall.name": "Donut Nofall",
   "liquidbounce.module.donutNofall.description": "SlimefunHelper NoFall Test 2 landing correction.",
   "liquidbounce.module.elytraJump.description": "Jumps and starts an elytra glide near the ground using silent flight rotations.",

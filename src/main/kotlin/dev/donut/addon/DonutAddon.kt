@@ -1,6 +1,7 @@
 package dev.donut.addon
 
 import dev.donut.addon.modules.ModuleDonutNofall
+import dev.donut.addon.modules.ModuleAntiLeak
 import dev.donut.addon.modules.ModuleElytraJump
 import dev.donut.addon.modules.ModuleGrimGroundVelocity
 import dev.donut.addon.modules.ModuleUnbreakableElytra
@@ -26,6 +27,7 @@ class DonutAddon : LiquidBounceAddon() {
     )
     override fun onInitialize() {
         registerModules(
+            ModuleAntiLeak,
             ModuleDonutNofall,
             ModuleElytraJump,
             ModuleUnbreakableElytra,

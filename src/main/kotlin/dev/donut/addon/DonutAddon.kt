@@ -20,6 +20,7 @@ import dev.donut.addon.hud.speedometer.SpeedometerHudComponent
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleHud
 import net.ccbluex.liquidbounce.integration.theme.component.HudComponentManager
 import net.ccbluex.liquidbounce.integration.theme.component.components.NativeHudComponent
+import net.fabricmc.loader.api.FabricLoader
 
 class DonutAddon : LiquidBounceAddon() {
     override val categories: List<ModuleCategory> = listOf(
@@ -40,7 +41,10 @@ class DonutAddon : LiquidBounceAddon() {
         registerListeners(ElytraRestoreListener, ServerFlightPermissions, MVEventBridge)
         registerHud(RegionMapHudComponent)
         registerHud(SpeedometerHudComponent)
-        logger.info("Donut addon loaded for LiquidBounce 0.41.0 / Minecraft 26.3")
+        val loader = FabricLoader.getInstance()
+        logger.info("Donut addon loaded for LiquidBounce {} / Minecraft {}",
+            loader.getModContainer("liquidbounce").orElseThrow().metadata.version.friendlyString,
+            loader.getModContainer("minecraft").orElseThrow().metadata.version.friendlyString)
     }
 
     override fun onStarted() {

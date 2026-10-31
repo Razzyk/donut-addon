@@ -11,6 +11,7 @@ import net.ccbluex.liquidbounce.render.engine.type.BoundingBox2f
 import net.ccbluex.liquidbounce.render.engine.type.Color4b
 import net.ccbluex.liquidbounce.utils.render.Alignment
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.dimension.BuiltinDimensionTypes
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -48,6 +49,9 @@ object RegionMapHudComponent : NativeHudComponent(
         val pivotColor by color("PivotColor", Color4b(255, 70, 70))
         val length by double("Length", 8.0, 1.0, 30.0, "px")
         val thickness by double("Thickness", 1.5, 1.0, 5.0, "px")
+        val pivotSize by double("PivotSize", 3.0, 1.0, 12.0, "px")
+        val outline by boolean("Outline", true)
+        val outlineColor by color("OutlineColor", Color4b.BLACK)
     }
 
     private object RegionColors : ValueGroup("Region Colors") {
@@ -208,28 +212,40 @@ object RegionMapHudComponent : NativeHudComponent(
     private fun drawPlayerMarker(event: OverlayRenderEvent, bounds: BoundingBox2f, mapSize: Float) {
         val level = mc.level ?: return
         val player = mc.player ?: return
-        if (level.dimension() != Level.OVERWORLD) return
+        // Servers can give overworld shards their own dimension keys.
+        if (level.dimension() != Level.OVERWORLD &&
+            !level.dimensionTypeRegistration().`is`(BuiltinDimensionTypes.OVERWORLD) &&
+            !level.dimensionTypeRegistration().`is`(BuiltinDimensionTypes.OVERWORLD_CAVES)) return
 
         val (fractionX, fractionZ) = RegionMapData.projectWorldPosition(player.x, player.z, mapSize.toDouble())
         val markerX = bounds.xMin + fractionX.toFloat()
         val markerY = bounds.yMin + fractionZ.toFloat()
-        val yaw = Math.toRadians(player.yRot.toDouble())
-        val dx = -kotlin.math.sin(yaw).toFloat()
-        val dy = kotlin.math.cos(yaw).toFloat()
+        val yaw = Math.toRadians(player.yRot.takeIf { it.isFinite() }?.toDouble() ?: 0.0).toFloat()
         val length = Marker.length.toFloat()
         val thickness = Marker.thickness.toFloat()
-        var distance = 0f
-        while (distance <= length) {
-            event.context.drawQuadXYWH(
-                markerX + dx * distance - thickness / 2f,
-                markerY + dy * distance - thickness / 2f,
-                thickness,
-                thickness,
-                Marker.directionColor,
-            )
-            distance += 0.5f
+        val pivot = max(Marker.pivotSize.toFloat(), thickness)
+        val context = event.context
+        // Keep the marker above the map and shard labels in the queued GUI renderer.
+        context.nextStratum()
+        context.pose().pushMatrix()
+        try {
+            context.pose().translate(markerX, markerY)
+            context.pose().rotate(yaw)
+            // One continuous strip avoids the old chain of overlapping subpixel squares.
+            if (Marker.outline) {
+                context.drawQuadXYWH(-thickness / 2f - 1f, -1f, thickness + 2f,
+                    length + thickness / 2f + 2f, Marker.outlineColor)
+            }
+            context.drawQuadXYWH(-thickness / 2f, 0f, thickness, length + thickness / 2f,
+                Marker.directionColor)
+        } finally {
+            context.pose().popMatrix()
         }
-        event.context.drawQuadXYWH(markerX - thickness / 2f, markerY - thickness / 2f, thickness, thickness, Marker.pivotColor)
+        if (Marker.outline) {
+            context.drawQuadXYWH(markerX - pivot / 2f - 1f, markerY - pivot / 2f - 1f,
+                pivot + 2f, pivot + 2f, Marker.outlineColor)
+        }
+        context.drawQuadXYWH(markerX - pivot / 2f, markerY - pivot / 2f, pivot, pivot, Marker.pivotColor)
     }
 
     private fun textWidth(text: String): Float = runCatching {

@@ -11,11 +11,11 @@
   "mixins": ["donut-addon.mixins.json", "donut-mv.mixins.json", "donut-mv-events.mixins.json"],
   "accessWidener": "donut-addon.accesswidener",
   "depends": {
-    "minecraft": "26.3",
+    "minecraft": "~${minecraft_version}",
     "java": ">=25",
     "fabricloader": ">=${loader_version}",
     "fabric-language-kotlin": ">=${fabric_kotlin_version}",
-    "liquidbounce": "0.41.0"
+    "liquidbounce": ">=0.42.0"
   },
   "custom": { "liquidbounce": { "color": "#D89A58" }, "modmenu": { "parent": "liquidbounce" } }
 }

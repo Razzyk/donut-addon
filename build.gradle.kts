@@ -59,6 +59,14 @@ configurations.all {
     resolutionStrategy.cacheChangingModulesFor(0, "seconds")
 }
 
+// Check the release's compiled bytecode against another client, without recompiling it
+// against that client's API and accidentally hiding a binary-incompatible nightly change.
+providers.gradleProperty("liquidbounce_runtime_version").orNull?.let { version ->
+    configurations.named("testRuntimeClasspath") {
+        resolutionStrategy.force("net.ccbluex:liquidbounce:$version")
+    }
+}
+
 tasks.processResources {
     val modVersion = providers.gradleProperty("mod_version").zip(libs.versions.minecraft) { version, minecraft ->
         "$version+$minecraft"
@@ -115,6 +123,7 @@ tasks.jar {
 
 tasks.test {
     useJUnitPlatform()
+    systemProperty("donut.mainClassDirectories", sourceSets.main.get().output.classesDirs.asPath)
 }
 
 // Ports use reviewed source; supplied binaries stay outside source and resources.

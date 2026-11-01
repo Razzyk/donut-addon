@@ -1,4 +1,8 @@
 {
+  "liquidbounce.module.donutSpeedmine.name": "Donut Speedmine",
+  "liquidbounce.module.donutSpeedmine.description": "Removes the pause after finishing a block while mining is held.",
+  "liquidbounce.module.donutNoJumpDelay.name": "Donut NoJumpDelay",
+  "liquidbounce.module.donutNoJumpDelay.description": "Releases held jump input in the air and resumes it on landing.",
   "liquidbounce.module.antiLeak.description": "Makes deepslate textures face the same way to hide their position-based pattern.",
   "liquidbounce.module.donutNofall.name": "Donut Nofall",
   "liquidbounce.module.donutNofall.description": "SlimefunHelper NoFall Test 2 landing correction.",

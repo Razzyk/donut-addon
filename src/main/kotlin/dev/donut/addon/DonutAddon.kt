@@ -21,14 +21,20 @@ import net.ccbluex.liquidbounce.features.module.modules.render.ModuleHud
 import net.ccbluex.liquidbounce.integration.theme.component.HudComponentManager
 import net.ccbluex.liquidbounce.integration.theme.component.components.NativeHudComponent
 import net.fabricmc.loader.api.FabricLoader
+import dev.donut.addon.anubis.AnubisFeatures
+import dev.donut.addon.anubis.AnubisEventBridge
+import dev.donut.addon.modules.ModuleDonutSpeedmine
+import dev.donut.addon.modules.ModuleDonutNoJumpDelay
 
 class DonutAddon : LiquidBounceAddon() {
     override val categories: List<ModuleCategory> = listOf(
-        AddonCategories.DONUT, AddonCategories.BASEFINDING, AddonCategories.UTILITY
+        AddonCategories.DONUT, AddonCategories.BASEFINDING, AddonCategories.UTILITY, AddonCategories.MACROS
     )
     override fun onInitialize() {
         registerModules(
             ModuleAntiLeak,
+            ModuleDonutSpeedmine,
+            ModuleDonutNoJumpDelay,
             ModuleDonutNofall,
             ModuleElytraJump,
             ModuleUnbreakableElytra,
@@ -37,8 +43,10 @@ class DonutAddon : LiquidBounceAddon() {
             ModuleRegionMap
         )
         registerModules(*MVFeatures.modules.toTypedArray())
+        registerModules(*AnubisFeatures.modules.toTypedArray())
+        AnubisFeatures.modules.forEach(AnubisEventBridge::register)
         LightCache.register()
-        registerListeners(ElytraRestoreListener, ServerFlightPermissions, MVEventBridge)
+        registerListeners(ElytraRestoreListener, ServerFlightPermissions, MVEventBridge, AnubisEventBridge)
         registerHud(RegionMapHudComponent)
         registerHud(SpeedometerHudComponent)
         val loader = FabricLoader.getInstance()

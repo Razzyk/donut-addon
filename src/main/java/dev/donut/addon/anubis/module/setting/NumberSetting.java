@@ -1,0 +1,2 @@
+package dev.donut.addon.anubis.module.setting;
+public class NumberSetting extends Setting<Float>{ public final float min,max; public float increment=1f; public NumberSetting(String name,float value,float min,float max){super(name,value);this.min=min;this.max=max;} public NumberSetting step(float value){increment=value;return this;} public int getInt(){return Math.round(get());} public String formatted(){return Float.toString(get()).replaceAll("\\.0$", "");} }

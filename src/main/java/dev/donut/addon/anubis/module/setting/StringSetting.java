@@ -1,0 +1,3 @@
+package dev.donut.addon.anubis.module.setting;
+import java.util.*;
+public class StringSetting extends Setting<String>{ public String hint=""; public List<Preset> presets=List.of(); public boolean itemPicker; public StringSetting enchantsFor; public StringSetting(String name,String value){super(name,value);} public StringSetting hint(String value){hint=value;return this;} public StringSetting presets(List<Preset> value){presets=List.copyOf(value);return this;} public StringSetting itemPicker(){itemPicker=true;return this;} public StringSetting enchantsFor(StringSetting value){enchantsFor=value;return this;} public record Preset(String value,String label,String item,boolean selectable){} }

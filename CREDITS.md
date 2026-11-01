@@ -11,8 +11,8 @@ https://github.com/m1919810/SlimefunHelper/tree/fe5ed1545d7b607746d038a8523da08f
 Build scaffolding adapted from CCBlueX's LiquidBounce-Addon-Template (GPL-3.0-or-later):
 https://github.com/CCBlueX/LiquidBounce-Addon-Template/tree/b67a6be64dd8076b2046be7da18e05dd0e7e4e79
 
-Compiled against CCBlueX LiquidBounce v0.41.0, Minecraft 26.3:
-https://github.com/CCBlueX/LiquidBounce/tree/826ee0e1656a11f1f3a57075c81a485b4699a754
+Compiled against CCBlueX LiquidBounce v0.42.0, Minecraft 26.3:
+https://github.com/CCBlueX/LiquidBounce/tree/v0.42.0
 
 The Donut code and build scaffolding retain GPL-3.0-or-later. The original SlimefunHelper CC0 license
 is included separately in licenses/SlimefunHelper-CC0.txt. LiquidBounce and Minecraft are
@@ -56,3 +56,8 @@ StorageESP+ block-state discovery was adapted from the user-supplied
 Its CC0 license is preserved in `licenses/Storage-Visualiser-CC0.txt`.
 The port uses bounded client-thread scans and the existing StorageESP+ renderer;
 the original JAR and Meteor runtime are not bundled.
+
+Anubis macro routines were adapted from the user-supplied `anubis_macros_extracted.zip`
+(Anubis Beta 0.9.9.3). Attribution, extraction hash and limitations of missing
+shared helpers are recorded in `licenses/Anubis-NOTICE.txt`. Original binaries
+remain outside this addon and are not executed or bundled. Usage is in `MACROS.md`.

@@ -8,6 +8,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.InputStream;
@@ -99,6 +100,21 @@ class NativeHookTargetsTest {
                                 if (!(entry instanceof AnnotationNode at)) continue;
                                 String invokedTarget = (String) value(at, "target");
                                 if (invokedTarget == null || invokedTarget.isEmpty()) continue;
+                                if ("FIELD".equals(value(at, "value"))) {
+                                    Integer opcode = (Integer) value(at, "opcode");
+                                    long fieldMatches = candidates.stream().flatMap(m -> {
+                                        List<FieldInsnNode> fields = new ArrayList<>();
+                                        for (var instruction : m.instructions) {
+                                            if (instruction instanceof FieldInsnNode field) fields.add(field);
+                                        }
+                                        return fields.stream();
+                                    }).filter(field -> invokedTarget.equals("L" + field.owner + ";" + field.name + ":" + field.desc)
+                                        && (opcode == null || opcode == field.getOpcode())).count();
+                                    Integer ordinal = (Integer) value(at, "ordinal");
+                                    assertTrue(fieldMatches > (ordinal == null ? -1 : ordinal) && fieldMatches > 0,
+                                        target.name + "." + methodName + " -> " + invokedTarget + ", ordinal " + ordinal);
+                                    continue;
+                                }
                                 long matches = candidates.stream().flatMap(m -> {
                                     List<MethodInsnNode> instructions = new ArrayList<>();
                                     for (var instruction : m.instructions) {

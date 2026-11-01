@@ -1,0 +1,1 @@
+package dev.donut.addon.anubis.event.impl; import dev.donut.addon.anubis.event.EventType; public final class MouseInputEvent { public static final EventType<MouseInputEvent> TYPE=new EventType<>(MouseInputEvent.class); public final int button,action; public MouseInputEvent(int button,int action){this.button=button;this.action=action;} }

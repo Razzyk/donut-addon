@@ -1,0 +1,1 @@
+package dev.donut.addon.anubis.event.impl; import dev.donut.addon.anubis.event.EventType; public final class TickEvent { public static final EventType<TickEvent> TYPE=new EventType<>(TickEvent.class); }

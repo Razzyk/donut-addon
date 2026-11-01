@@ -1,0 +1,19 @@
+Anubis macro source attribution
+
+The macro implementations under dev.donut.addon.anubis were adapted from
+the user-supplied anubis_macros_extracted.zip (Anubis Beta 0.9.9.3).
+Supplied ZIP SHA-256:
+d449e4b269e0c48142e6af4a7eaa1bda76e5f7664b802c5280de0a1d555a7119
+
+The supplied classes were read statically and decompiled; no original
+Anubis binary is bundled or used as a runtime dependency.
+
+The extraction did not contain a license notice or individual author names.
+The surrounding addon's GPL notice does not relicense this material or
+assert permission from its original authors.
+
+Shared Anubis runtime helpers were absent from the extraction. The port
+provides LiquidBounce-backed settings, events, friends, command completion,
+rotation, combat and dialog adapters. The recovered macro routines and
+settings are retained, but the missing helpers' exact original behavior
+cannot be established from the supplied files.

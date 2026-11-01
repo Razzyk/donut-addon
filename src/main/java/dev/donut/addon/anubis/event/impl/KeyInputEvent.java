@@ -1,0 +1,1 @@
+package dev.donut.addon.anubis.event.impl; import dev.donut.addon.anubis.event.EventType; public final class KeyInputEvent { public static final EventType<KeyInputEvent> TYPE=new EventType<>(KeyInputEvent.class); public final int key,action; public KeyInputEvent(int key,int action){this.key=key;this.action=action;} }

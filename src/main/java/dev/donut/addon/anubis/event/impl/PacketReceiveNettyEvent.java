@@ -1,0 +1,1 @@
+package dev.donut.addon.anubis.event.impl; import net.minecraft.network.protocol.Packet; public final class PacketReceiveNettyEvent { public final Packet<?> packet; public PacketReceiveNettyEvent(Packet<?> packet){this.packet=packet;} }

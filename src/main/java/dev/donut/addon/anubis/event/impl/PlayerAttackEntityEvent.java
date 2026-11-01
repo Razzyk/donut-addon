@@ -1,0 +1,1 @@
+package dev.donut.addon.anubis.event.impl; import net.minecraft.world.entity.Entity; public final class PlayerAttackEntityEvent { public final Entity target; public PlayerAttackEntityEvent(Entity target){this.target=target;} }

@@ -7,4 +7,5 @@ object AddonCategories {
     @JvmField val DONUT = ModuleCategory("Donut")
     @JvmField val BASEFINDING = ModuleCategory("Basefinding")
     @JvmField val UTILITY = ModuleCategory("Donut Utility")
+    @JvmField val MACROS = ModuleCategory("Macros")
 }

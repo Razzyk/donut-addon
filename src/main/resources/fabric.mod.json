@@ -5,7 +5,7 @@
   "name": "Donut Addon by Razzy",
   "description": "Donut Addon v 1 by Razzy.",
   "authors": ["Razzy"],
-  "license": ["GPL-3.0-or-later", "CC0-1.0", "LicenseRef-MV-Addon", "LicenseRef-StashHunting"],
+  "license": ["GPL-3.0-or-later", "CC0-1.0", "LicenseRef-MV-Addon", "LicenseRef-StashHunting", "LicenseRef-Anubis"],
   "environment": "client",
   "entrypoints": { "liquidbounce": ["dev.donut.addon.DonutAddon"] },
   "mixins": ["donut-addon.mixins.json", "donut-mv.mixins.json", "donut-mv-events.mixins.json"],

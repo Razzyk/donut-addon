@@ -1,5 +1,7 @@
 package dev.donut.addon
 
+import dev.donut.addon.compat.DonutEventListener
+
 import net.ccbluex.liquidbounce.event.EventListener
 import net.ccbluex.liquidbounce.event.events.PacketEvent
 import net.ccbluex.liquidbounce.event.events.TransferOrigin
@@ -9,7 +11,7 @@ import net.minecraft.client.player.LocalPlayer
 import net.minecraft.network.protocol.game.ClientboundPlayerAbilitiesPacket
 
 /** Tracks server permission independently of Fly modes that change the local abilities object. */
-object ServerFlightPermissions : EventListener {
+object ServerFlightPermissions : DonutEventListener {
     @Volatile private var seenPacket = false
     @Volatile private var mayFly = false
 

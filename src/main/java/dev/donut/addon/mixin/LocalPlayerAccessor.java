@@ -9,5 +9,6 @@ public interface LocalPlayerAccessor {
     @Accessor("xLast") void donut$setXLast(double value);
     @Accessor("yLast") void donut$setYLast(double value);
     @Accessor("zLast") void donut$setZLast(double value);
+    @Accessor("positionReminder") void donut$setPositionReminder(int value);
 
 }

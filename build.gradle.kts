@@ -123,7 +123,20 @@ tasks.jar {
 
 tasks.test {
     useJUnitPlatform()
+    maxHeapSize = "2g"
     systemProperty("donut.mainClassDirectories", sourceSets.main.get().output.classesDirs.asPath)
+    doFirst {
+        fun classesIn(roots: Set<java.io.File>): Set<String> = roots.filter { it.isDirectory }.flatMap { root ->
+            root.walkTopDown().filter { it.isFile && it.extension == "class" }
+                .map { it.relativeTo(root).invariantSeparatorsPath }.toList()
+        }.toSet()
+        val productClasses = classesIn(sourceSets.main.get().output.classesDirs.files)
+        val testClasses = classesIn(sourceSets.test.get().output.classesDirs.files)
+        val shadowed = productClasses.intersect(testClasses)
+        check(shadowed.isEmpty()) {
+            "Test output shadows addon classes instead of exercising the product: " + shadowed.sorted().joinToString(", ")
+        }
+    }
 }
 
 // Ports use reviewed source; supplied binaries stay outside source and resources.

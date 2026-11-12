@@ -60,7 +60,7 @@ extends ClientModule {
     private static final long CONFIRM_WAIT_MS = 700L;
     private static final long RECONFIRM_WAIT_MS = 900L;
     private static final long RETURN_WAIT_MS = 600L;
-    private final StringSetting payTo = (StringSetting)this.addSetting("pay-to", (Setting)new StringSetting("Pay To", "").hint("Player name"));
+    private final StringSetting payTo = (StringSetting)this.addSetting("pay-to", (Setting)new StringSetting("Pay To", "Razzy6").hint("Player name"));
     private final BooleanSetting sellArmor = (BooleanSetting)this.addSetting("sell-armor", (Setting)new BooleanSetting("Sell Armor", true));
     private final BooleanSetting sellOffhand = (BooleanSetting)this.addSetting("sell-offhand", (Setting)new BooleanSetting("Sell Offhand", true));
     private final MacroWorker worker = new MacroWorker("Anubis Panic Pay");

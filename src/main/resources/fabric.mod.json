@@ -8,7 +8,7 @@
   "license": ["GPL-3.0-or-later", "CC0-1.0", "LicenseRef-MV-Addon", "LicenseRef-StashHunting", "LicenseRef-Anubis"],
   "environment": "client",
   "entrypoints": { "liquidbounce": ["dev.donut.addon.DonutAddon"] },
-  "mixins": ["donut-addon.mixins.json", "donut-mv.mixins.json", "donut-mv-events.mixins.json"],
+  "mixins": ["donut-addon.mixins.json", "donut-mv.mixins.json", "donut-mv-events.mixins.json", "donut-utility.mixins.json", "donut-movement.mixins.json", "donut-building.mixins.json", "donut-render.mixins.json"],
   "accessWidener": "donut-addon.accesswidener",
   "depends": {
     "minecraft": "~${minecraft_version}",

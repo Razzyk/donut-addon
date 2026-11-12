@@ -1,5 +1,7 @@
 package dev.donut.addon
 
+import dev.donut.addon.compat.DonutEventListener
+
 import dev.donut.addon.modules.ModuleDonutNofall
 import dev.donut.addon.modules.ModuleAntiLeak
 import dev.donut.addon.modules.ModuleElytraJump
@@ -25,12 +27,15 @@ import dev.donut.addon.anubis.AnubisFeatures
 import dev.donut.addon.anubis.AnubisEventBridge
 import dev.donut.addon.modules.ModuleDonutSpeedmine
 import dev.donut.addon.modules.ModuleDonutNoJumpDelay
+import dev.donut.addon.expansion.ExpansionFeatures
 
 class DonutAddon : LiquidBounceAddon() {
     override val categories: List<ModuleCategory> = listOf(
         AddonCategories.DONUT, AddonCategories.BASEFINDING, AddonCategories.UTILITY, AddonCategories.MACROS
     )
     override fun onInitialize() {
+        // Track always-on lifecycle hooks before module registration can fail and trigger rollback.
+        registerListeners(*ExpansionFeatures.listeners.toTypedArray())
         registerModules(
             ModuleAntiLeak,
             ModuleDonutSpeedmine,
@@ -44,11 +49,13 @@ class DonutAddon : LiquidBounceAddon() {
         )
         registerModules(*MVFeatures.modules.toTypedArray())
         registerModules(*AnubisFeatures.modules.toTypedArray())
+        registerModules(*ExpansionFeatures.modules.toTypedArray())
         AnubisFeatures.modules.forEach(AnubisEventBridge::register)
         LightCache.register()
         registerListeners(ElytraRestoreListener, ServerFlightPermissions, MVEventBridge, AnubisEventBridge)
         registerHud(RegionMapHudComponent)
         registerHud(SpeedometerHudComponent)
+        ExpansionFeatures.hudComponents.forEach(::registerHud)
         val loader = FabricLoader.getInstance()
         logger.info("Donut addon loaded for LiquidBounce {} / Minecraft {}",
             loader.getModContainer("liquidbounce").orElseThrow().metadata.version.friendlyString,
@@ -58,6 +65,10 @@ class DonutAddon : LiquidBounceAddon() {
     override fun onStarted() {
         RegionMapHudComponent.enabled = ModuleRegionMap.enabled
         HudComponentManager.updateComponents()
+    }
+
+    override fun onStopping() {
+        ExpansionFeatures.shutdown()
     }
 
     private fun registerHud(component: NativeHudComponent) {
@@ -71,7 +82,7 @@ class DonutAddon : LiquidBounceAddon() {
 }
 
 /** Withdraw the editor entry and settings as well as its event hooks if addon loading fails. */
-private class HudRegistration(private val component: NativeHudComponent) : EventListener {
+private class HudRegistration(private val component: NativeHudComponent) : DonutEventListener {
     override fun unregister() {
         HudComponentManager.unregister(component)
         if (component.base === ModuleHud.components) ModuleHud.components.drop(component)
@@ -81,7 +92,7 @@ private class HudRegistration(private val component: NativeHudComponent) : Event
 }
 
 /** Finish an inventory transaction even if the user disables its module mid-swap. */
-private object ElytraRestoreListener : EventListener {
+private object ElytraRestoreListener : DonutEventListener {
     @Suppress("unused")
     private val tick = handler<PlayerTickEvent>(priority = 100) {
         ModuleUnbreakableElytra.cleanupTick()

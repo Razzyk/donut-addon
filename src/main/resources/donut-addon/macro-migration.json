@@ -1,0 +1,1325 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {
+      "target": "Donut Anchor Chain",
+      "aliases": [
+        "Anubis Anchor Macro",
+        "Anchor Macro"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Mode",
+          "targetLabel": "Mode",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Delay",
+          "targetLabel": "Delay",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Safe Anchor",
+          "targetLabel": "Safe Anchor",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "If Unguarded",
+          "targetLabel": "If Unguarded",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Switch Back",
+          "targetLabel": "Switch Back",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Protect Loot",
+          "targetLabel": "Protect Loot",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Crystal Chain",
+      "aliases": [
+        "Anubis Crystal Macro",
+        "Crystal Macro"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Break Delay",
+          "targetLabel": "Break Delay (ticks)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Place Delay",
+          "targetLabel": "Place Delay (ticks)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Auto Obsidian",
+          "targetLabel": "Auto Obsidian",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Obsidian Delay",
+          "targetLabel": "Obsidian Delay (ticks)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Switch Back",
+          "targetLabel": "Switch Back",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Self Damage",
+          "targetLabel": "Max Self Damage",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Human Pace",
+          "targetLabel": "Humanize",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Chat Keys",
+      "aliases": [
+        "Anubis Chat Macro",
+        "Chat Macro"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Slots",
+          "targetLabel": "Slots",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "On Press",
+          "targetLabel": "On Press",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Cooldown (s)",
+          "targetLabel": "Cooldown (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 1 Key",
+          "targetLabel": "Macro 1 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 2 Key",
+          "targetLabel": "Macro 2 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 3 Key",
+          "targetLabel": "Macro 3 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 4 Key",
+          "targetLabel": "Macro 4 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 5 Key",
+          "targetLabel": "Macro 5 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 6 Key",
+          "targetLabel": "Macro 6 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 7 Key",
+          "targetLabel": "Macro 7 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 8 Key",
+          "targetLabel": "Macro 8 Key",
+          "transient": false,
+          "keyBinding": true,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 1 Text",
+          "targetLabel": "Macro 1 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 2 Text",
+          "targetLabel": "Macro 2 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 3 Text",
+          "targetLabel": "Macro 3 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 4 Text",
+          "targetLabel": "Macro 4 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 5 Text",
+          "targetLabel": "Macro 5 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 6 Text",
+          "targetLabel": "Macro 6 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 7 Text",
+          "targetLabel": "Macro 7 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Macro 8 Text",
+          "targetLabel": "Macro 8 Text",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Visitor Guard",
+      "aliases": [
+        "Anubis Tpahere Kill Bot",
+        "Tpahere Kill Bot"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Command",
+          "targetLabel": "Command",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order",
+          "targetLabel": "Order",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Letters",
+          "targetLabel": "Letters",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Start Letter",
+          "targetLabel": "Start Letter",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Include 0-9 and _",
+          "targetLabel": "Include 0-9 and _",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Bedrock Players Only",
+          "targetLabel": "Bedrock Players Only",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Repeat Forever",
+          "targetLabel": "Repeat Forever",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Delay (s)",
+          "targetLabel": "Delay (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Skip Offline Players",
+          "targetLabel": "Skip Offline Players",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "New Players First",
+          "targetLabel": "New Players First",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Never Request",
+          "targetLabel": "Never Request",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Send For (min, 0 = always)",
+          "targetLabel": "Send For (min, 0 = always)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Then Rest (min)",
+          "targetLabel": "Then Rest (min)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Pause Radius",
+          "targetLabel": "Pause Radius",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Resume After (s)",
+          "targetLabel": "Resume After (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Attack",
+          "targetLabel": "Attack",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Attack Radius",
+          "targetLabel": "Attack Radius",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Sword Slot (0 = auto)",
+          "targetLabel": "Sword Slot (0 = auto)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Eat Below (hearts, 0 = never)",
+          "targetLabel": "Eat Below (hearts, 0 = never)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Apple Slot (0 = auto)",
+          "targetLabel": "Apple Slot (0 = auto)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Eat Cooldown (s)",
+          "targetLabel": "Eat Cooldown (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchanted Apples First",
+          "targetLabel": "Enchanted Apples First",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Auto Respawn",
+          "targetLabel": "Auto Respawn",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Respawn Command",
+          "targetLabel": "Respawn Command",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Auto Sell",
+          "targetLabel": "Auto Sell",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Never Sell",
+          "targetLabel": "Never Sell",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Trade Orders",
+      "aliases": [
+        "Anubis Order AH Trader",
+        "Order AH Trader"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Product",
+          "targetLabel": "Product",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item",
+          "targetLabel": "Product 1 Item",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item",
+          "targetLabel": "Product 2 Item",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item",
+          "targetLabel": "Product 3 Item",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item",
+          "targetLabel": "Product 4 Item",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item",
+          "targetLabel": "Product 5 Item",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Min Price (each)",
+          "targetLabel": "Product 1 Min Price (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Min Price (each)",
+          "targetLabel": "Product 2 Min Price (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Min Price (each)",
+          "targetLabel": "Product 3 Min Price (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Min Price (each)",
+          "targetLabel": "Product 4 Min Price (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Min Price (each)",
+          "targetLabel": "Product 5 Min Price (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments",
+          "targetLabel": "Product 1 Enchantments",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments",
+          "targetLabel": "Product 2 Enchantments",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments",
+          "targetLabel": "Product 3 Enchantments",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments",
+          "targetLabel": "Product 4 Enchantments",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments",
+          "targetLabel": "Product 5 Enchantments",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Restock With Orders",
+          "targetLabel": "Product 1 Restock With Orders",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Restock With Orders",
+          "targetLabel": "Product 2 Restock With Orders",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Restock With Orders",
+          "targetLabel": "Product 3 Restock With Orders",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Restock With Orders",
+          "targetLabel": "Product 4 Restock With Orders",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Restock With Orders",
+          "targetLabel": "Product 5 Restock With Orders",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order Amount",
+          "targetLabel": "Product 1 Order Amount",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order Amount",
+          "targetLabel": "Product 2 Order Amount",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order Amount",
+          "targetLabel": "Product 3 Order Amount",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order Amount",
+          "targetLabel": "Product 4 Order Amount",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order Amount",
+          "targetLabel": "Product 5 Order Amount",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order Price",
+          "targetLabel": "Product 1 Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {
+            "Beat": "Beat Top Order"
+          }
+        },
+        {
+          "oldLabel": "Order Price",
+          "targetLabel": "Product 2 Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {
+            "Beat": "Beat Top Order"
+          }
+        },
+        {
+          "oldLabel": "Order Price",
+          "targetLabel": "Product 3 Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {
+            "Beat": "Beat Top Order"
+          }
+        },
+        {
+          "oldLabel": "Order Price",
+          "targetLabel": "Product 4 Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {
+            "Beat": "Beat Top Order"
+          }
+        },
+        {
+          "oldLabel": "Order Price",
+          "targetLabel": "Product 5 Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {
+            "Beat": "Beat Top Order"
+          }
+        },
+        {
+          "oldLabel": "Fixed Order Price (each)",
+          "targetLabel": "Product 1 Fixed Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Fixed Order Price (each)",
+          "targetLabel": "Product 2 Fixed Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Fixed Order Price (each)",
+          "targetLabel": "Product 3 Fixed Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Fixed Order Price (each)",
+          "targetLabel": "Product 4 Fixed Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Fixed Order Price (each)",
+          "targetLabel": "Product 5 Fixed Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Beat By",
+          "targetLabel": "Product 1 Beat By",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Beat By",
+          "targetLabel": "Product 2 Beat By",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Beat By",
+          "targetLabel": "Product 3 Beat By",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Beat By",
+          "targetLabel": "Product 4 Beat By",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Beat By",
+          "targetLabel": "Product 5 Beat By",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Order Price (each)",
+          "targetLabel": "Product 1 Max Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Order Price (each)",
+          "targetLabel": "Product 2 Max Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Order Price (each)",
+          "targetLabel": "Product 3 Max Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Order Price (each)",
+          "targetLabel": "Product 4 Max Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Order Price (each)",
+          "targetLabel": "Product 5 Max Order Price",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Undercut By",
+          "targetLabel": "Undercut By",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price Check (s)",
+          "targetLabel": "Price Check (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Sales Check (s)",
+          "targetLabel": "Sales Check (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Items Per Listing",
+          "targetLabel": "Items Per Listing",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Listings",
+          "targetLabel": "Max Listings",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Listing Delay (s)",
+          "targetLabel": "Listing Delay (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Relist Higher At (x undercut)",
+          "targetLabel": "Relist Higher At (x undercut)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Ignore Drops Over (x undercut)",
+          "targetLabel": "Ignore Drops Over (x undercut)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Collect Up To (slots)",
+          "targetLabel": "Collect Up To (slots)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Order Check (s)",
+          "targetLabel": "Order Check (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Listings",
+      "aliases": [
+        "Anubis AH Sell",
+        "AH Sell"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Items",
+          "targetLabel": "Items",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Pricing",
+          "targetLabel": "Pricing",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Undercut By",
+          "targetLabel": "Undercut By",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price Check (s)",
+          "targetLabel": "Price Check (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Relist Higher At (x undercut)",
+          "targetLabel": "Relist Higher At (x undercut)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Ignore Drops Over (x undercut)",
+          "targetLabel": "Ignore Drops Over (x undercut)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Sales Check (s)",
+          "targetLabel": "Sales Check (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Items Per Listing",
+          "targetLabel": "Items Per Listing",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Listings",
+          "targetLabel": "Max Listings",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Listing Delay (s)",
+          "targetLabel": "Listing Delay (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 1",
+          "targetLabel": "Item 1",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 2",
+          "targetLabel": "Item 2",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 3",
+          "targetLabel": "Item 3",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 4",
+          "targetLabel": "Item 4",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 5",
+          "targetLabel": "Item 5",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 6",
+          "targetLabel": "Item 6",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 7",
+          "targetLabel": "Item 7",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 8",
+          "targetLabel": "Item 8",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Item 9",
+          "targetLabel": "Item 9",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 1",
+          "targetLabel": "Enchantments 1",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 2",
+          "targetLabel": "Enchantments 2",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 3",
+          "targetLabel": "Enchantments 3",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 4",
+          "targetLabel": "Enchantments 4",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 5",
+          "targetLabel": "Enchantments 5",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 6",
+          "targetLabel": "Enchantments 6",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 7",
+          "targetLabel": "Enchantments 7",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 8",
+          "targetLabel": "Enchantments 8",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments 9",
+          "targetLabel": "Enchantments 9",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 1 (each)",
+          "targetLabel": "Price 1 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 2 (each)",
+          "targetLabel": "Price 2 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 3 (each)",
+          "targetLabel": "Price 3 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 4 (each)",
+          "targetLabel": "Price 4 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 5 (each)",
+          "targetLabel": "Price 5 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 6 (each)",
+          "targetLabel": "Price 6 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 7 (each)",
+          "targetLabel": "Price 7 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 8 (each)",
+          "targetLabel": "Price 8 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Price 9 (each)",
+          "targetLabel": "Price 9 (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Sell Loop",
+      "aliases": [
+        "Anubis Auto Sell",
+        "Auto Sell"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Never Sell",
+          "targetLabel": "Never Sell",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Travel Requests",
+      "aliases": [
+        "Anubis Tp Macro",
+        "Tp Macro"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Command",
+          "targetLabel": "Command",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Player",
+          "targetLabel": "Player",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Interval (s)",
+          "targetLabel": "Interval (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Order Collector",
+      "aliases": [
+        "Anubis Order Dropper",
+        "Order Dropper"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Order Slot (0 = first)",
+          "targetLabel": "Order Slot (0 = first)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Pages To Drop",
+          "targetLabel": "Pages To Drop",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Drop Delay (s)",
+          "targetLabel": "Drop Delay (s)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Quick Transfer",
+      "aliases": [
+        "Anubis Panic Pay",
+        "Panic Pay"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Pay To",
+          "targetLabel": "Pay To",
+          "transient": true,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Sell Armor",
+          "targetLabel": "Sell Armor",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Sell Offhand",
+          "targetLabel": "Sell Offhand",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    },
+    {
+      "target": "Donut Auction Watch",
+      "aliases": [
+        "Anubis AH Sniper",
+        "AH Sniper"
+      ],
+      "settings": [
+        {
+          "oldLabel": "Item",
+          "targetLabel": "Item",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Buy Below (each)",
+          "targetLabel": "Buy Below (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchantments",
+          "targetLabel": "Enchantments",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Enchant Match",
+          "targetLabel": "Enchant Match",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Min Time Left (h)",
+          "targetLabel": "Min Time Left (h)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Refresh Every (ms)",
+          "targetLabel": "Refresh Every (ms)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Wait After Page Change (ms)",
+          "targetLabel": "Wait After Page Change (ms)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Max Total Spend",
+          "targetLabel": "Max Total Spend",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Only Buy With Confirm",
+          "targetLabel": "Only Buy With Confirm",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Stop After (buys, 0 = never)",
+          "targetLabel": "Stop After (buys, 0 = never)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Auto Sell",
+          "targetLabel": "Auto Sell",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        },
+        {
+          "oldLabel": "Sell Price (each)",
+          "targetLabel": "Sell Price (each)",
+          "transient": false,
+          "keyBinding": false,
+          "valueAliases": {}
+        }
+      ]
+    }
+  ]
+}

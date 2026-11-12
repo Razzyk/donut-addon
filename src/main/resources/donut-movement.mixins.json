@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.donut.addon.expansion.movement.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["MixinDonutAirAcceleration", "MixinDonutFlightMedium", "MixinDonutFlightCrouch", "MixinDonutVehicleMotion", "MixinDonutBoatSteering", "MixinDonutBoatCollision", "MixinDonutMountSaddle", "MixinDonutMountJump", "MixinDonutRiptide", "MixinDonutSurfaceCollisions", "MixinDonutSurfaceFluid", "MixinDonutSurfaceSnow", "MixinDonutSurfaceBubble"],
+  "injectors": { "defaultRequire": 1 }
+}

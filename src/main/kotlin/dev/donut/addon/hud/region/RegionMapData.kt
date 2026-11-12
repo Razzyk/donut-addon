@@ -233,31 +233,42 @@ object RegionMapData {
     )
 
     @JvmField
-    val shards: List<RegionShard> = buildList {
+    val shards: List<RegionShard> = buildShardList()
+
+    @JvmField
+    val cells: Array<Array<RegionShard?>> = buildCellGrid()
+
+    // Keep loops out of the large static table initializer; K2's inlining can otherwise
+    // produce invalid stack-map frames when assigning array initializer loop locals.
+    private fun buildShardList(): List<RegionShard> {
+        val result = ArrayList<RegionShard>()
         for ((region, rectangles) in regions) {
             val ordered = rectangles.sortedWith(compareBy<IntArray> { it[1] }.thenBy { it[0] })
-            ordered.forEachIndexed { index, rectangle ->
+            for (index in ordered.indices) {
+                val rectangle = ordered[index]
                 val (column, row, width, height) = rectangle
                 require(column >= 0 && row >= 0 && column + width <= GRID_SIZE && row + height <= GRID_SIZE) {
                     "Shard out of bounds in $region: $column,$row ${width}x$height"
                 }
-                add(RegionShard(region, index + 1, column, row, width, height))
+                result.add(RegionShard(region, index + 1, column, row, width, height))
             }
         }
+        return result.toList()
     }
 
-    @JvmField
-    val cells: Array<Array<RegionShard?>> = Array(GRID_SIZE) { arrayOfNulls<RegionShard>(GRID_SIZE) }.also { cells ->
+    private fun buildCellGrid(): Array<Array<RegionShard?>> {
+        val result = Array(GRID_SIZE) { arrayOfNulls<RegionShard>(GRID_SIZE) }
         val occupied = Array(GRID_SIZE) { BooleanArray(GRID_SIZE) }
-        shards.forEach { shard ->
+        for (shard in shards) {
             for (row in shard.row until shard.row + shard.height) {
                 for (column in shard.column until shard.column + shard.width) {
                     require(!occupied[row][column]) { "Overlapping shards at $column,$row" }
                     occupied[row][column] = true
-                    cells[row][column] = shard
+                    result[row][column] = shard
                 }
             }
         }
+        return result
     }
 
     /** Returns the local map-space pixel position of a world coordinate, clamped to the map. */

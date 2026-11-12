@@ -61,3 +61,15 @@ Anubis macro routines were adapted from the user-supplied `anubis_macros_extract
 (Anubis Beta 0.9.9.3). Attribution, extraction hash and limitations of missing
 shared helpers are recorded in `licenses/Anubis-NOTICE.txt`. Original binaries
 remain outside this addon and are not executed or bundled. Usage is in `MACROS.md`.
+
+The newer user-supplied full 1.0 decompilation was also reviewed as a static
+behavior reference for independently written Donut expansion modules. Its
+metadata credits 4ldenz and declares GPL-3.0-only. The included GPL text is
+preserved in `licenses/Anubis-GPL-3.0.txt`; provenance and the input hash are
+recorded in `licenses/Anubis-NOTICE.txt`. Source-client binaries, native
+libraries, launch/security code, and brand assets are excluded.
+
+The subsequent user-supplied `anubis-1.0-src (but better).zip` provides readable,
+Mojang-named Minecraft 1.21.11 source for the same behavioral review. Its SHA-256
+and provenance are recorded in `licenses/Anubis-NOTICE.txt`. Supplied build
+scripts, wrappers, launchers, and executable artifacts are not used by this addon.

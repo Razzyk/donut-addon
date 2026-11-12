@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.donut.addon.expansion.render.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["MixinDonutLightmap", "MixinDonutClockFactory", "MixinDonutClockFace"],
+  "injectors": { "defaultRequire": 1 }
+}

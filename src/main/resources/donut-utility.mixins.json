@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.donut.addon.expansion.utility.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["MixinDonutSwingDuration", "MixinDonutBlockSync", "MixinDonutNameShield", "MixinDonutDetachedCamera", "MixinDonutDetachedHands", "MixinDonutDetachedScroll", "MixinDonutSkinWardrobe", "MixinDonutShareGuardHud", "MixinDonutShareGuardInventory", "MixinDonutStatusTab", "MixinDonutStatusSidebar"],
+  "injectors": { "defaultRequire": 1 }
+}

@@ -1,5 +1,7 @@
 package dev.donut.addon.anubis
 
+import dev.donut.addon.compat.DonutEventListener
+
 import dev.donut.addon.anubis.event.impl.*
 import dev.donut.addon.anubis.module.ClientModule
 import dev.donut.addon.anubis.util.CompletionChannel
@@ -9,7 +11,7 @@ import net.ccbluex.liquidbounce.event.handler
 import net.minecraft.network.protocol.Packet
 import java.util.concurrent.CopyOnWriteArrayList
 
-object AnubisEventBridge : EventListener {
+object AnubisEventBridge : DonutEventListener {
     private val modules = CopyOnWriteArrayList<ClientModule>()
     @JvmStatic fun register(module: ClientModule) { modules.addIfAbsent(module) }
     @JvmStatic fun clear() {

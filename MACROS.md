@@ -1,4 +1,4 @@
-The Macros category contains the Anubis macro ports. Each entry starts disabled
+The Macros category contains Donut automation modules. Each entry starts disabled
 and exposes its options in the ClickGUI.
 
 | Module | Use |
@@ -10,12 +10,12 @@ and exposes its options in the ClickGUI.
 | Order Dropper | Select an order and number of pages to collect and drop. |
 | Tp Macro | Send `/tpa` or `/tpahere` to the configured player at the selected interval. |
 | Tpahere Kill Bot | Configure player discovery, request order, exclusions, nearby-player handling, combat, eating, selling and respawn options. LiquidBounce friends are excluded. |
-| Panic Pay | Set a recipient for the current session. Enabling sells inventory and selected equipment, then pays the balance to that recipient. Disable to cancel. |
+| Panic Pay | The editable recipient defaults to `Razzy6` for the current session. Enabling sells inventory and selected equipment, then pays the balance to that recipient. Disable to cancel. |
 | Crystal Macro | Hold the use key with appropriate combat items to run the crystal/optional obsidian sequence. |
 | Anchor Macro | Configure the anchor sequence, guard placement, delays and switch-back behavior. |
 | Chat Macro | Configure up to eight keyboard/mouse bindings and messages or commands; choose Send or Open in Chat. |
 
-Entries have an `Anubis` prefix. Configure their settings before enabling them.
+Configure each module's settings before enabling it.
 Macros stop on disconnect and do not restore an enabled state after restarting.
 They use DonutSMP's command and menu formats, so server menu changes can require updates.
 

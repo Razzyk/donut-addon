@@ -12,7 +12,7 @@ import net.ccbluex.liquidbounce.features.module.ClientModule
 import net.ccbluex.liquidbounce.utils.input.InputBind
 
 abstract class AnubisModuleBase(val sourceId: String, title: String, description: String) :
-    ClientModule("Anubis $title", AddonCategories.MACROS, disableOnQuit = true) {
+    ClientModule(title, AddonCategories.MACROS, disableOnQuit = true, aliases = listOf("Anubis $title")) {
     private val options = ValueGroup("Options").also { tree(it) }
     private var activating = false
     private var activationRejected = false

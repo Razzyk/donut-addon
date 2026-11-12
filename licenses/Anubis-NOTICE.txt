@@ -8,12 +8,35 @@ d449e4b269e0c48142e6af4a7eaa1bda76e5f7664b802c5280de0a1d555a7119
 The supplied classes were read statically and decompiled; no original
 Anubis binary is bundled or used as a runtime dependency.
 
-The extraction did not contain a license notice or individual author names.
-The surrounding addon's GPL notice does not relicense this material or
-assert permission from its original authors.
+The earlier macro-only extraction did not contain a license notice or
+individual author names. The later full 1.0 archive identifies 4ldenz as
+author and GPL-3.0-only as its license, and includes a complete GPL version
+3 license text. That text is preserved in Anubis-GPL-3.0.txt. This attribution
+records provenance; it does not claim that every older beta file had the
+same license or relicense material from another author.
 
 Shared Anubis runtime helpers were absent from the extraction. The port
 provides LiquidBounce-backed settings, events, friends, command completion,
 rotation, combat and dialog adapters. The recovered macro routines and
 settings are retained, but the missing helpers' exact original behavior
 cannot be established from the supplied files.
+
+The expansion under dev.donut.addon.expansion is independently written
+against LiquidBounce/Minecraft APIs using the newer recovered source as a
+behavior reference. It does not bundle the source client's binaries,
+nested libraries, native code, launch/security helpers, or brand assets.
+Reference input: Anubis Client 1.0.jar, SHA-256:
+e60968d360d57e8cfcd68bb127f6f56c7801ddebcff331827102596a209b15f1
+The user reports permission from the developer for independent Donut
+implementations. Original attribution is retained here separately from
+the Donut names used in the interface.
+
+Later primary reference: user-supplied anubis-1.0-src (but better).zip,
+SHA-256:
+d893fac98a1ca0bb1384c728d70551c3651c6ff1bce7ffcf6d02f2db0302e3bc
+
+This readable source targets Minecraft 1.21.11 with Mojang names. Its metadata
+identifies the same author and GPL-3.0-only license. It is read as static
+behavioral reference for independently authored Donut code adapted to the
+current LiquidBounce/Minecraft API. Supplied wrappers, build scripts,
+entrypoints and binaries are not executed or bundled.

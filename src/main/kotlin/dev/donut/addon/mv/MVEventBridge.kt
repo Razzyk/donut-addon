@@ -1,5 +1,7 @@
 package dev.donut.addon.mv
 
+import dev.donut.addon.compat.DonutEventListener
+
 import dev.donut.addon.mv.compat.MeteorClient
 import dev.donut.addon.mv.compat.events.game.GameJoinedEvent
 import dev.donut.addon.mv.compat.events.game.GameLeftEvent
@@ -19,7 +21,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.level.chunk.status.ChunkStatus
 
 /** The source event facade is fed by real LiquidBounce/Fabric hooks, never a second client runtime. */
-object MVEventBridge : EventListener {
+object MVEventBridge : DonutEventListener {
     private val mc get() = Minecraft.getInstance()
     private val bus get() = MeteorClient.EVENT_BUS
     private val keysDown = mutableSetOf<Any>()

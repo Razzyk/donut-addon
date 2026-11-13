@@ -13,13 +13,58 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Check the shipped Mixin declarations against the actual dependency without initializing Minecraft. */
 class NativeHookTargetsTest {
+    @Test void reservedMixinPackagesContainNoDirectlyLoadedRuntimeHelpers() throws Exception {
+        var declarations = new HashMap<String, Set<String>>();
+        for (String configName : mixinConfigs()) {
+            try (var resource = getClass().getResourceAsStream("/" + configName)) {
+                assertNotNull(resource, configName);
+                var config = JsonParser.parseReader(new InputStreamReader(resource)).getAsJsonObject();
+                String prefix = config.get("package").getAsString().replace('.', '/') + "/";
+                var registered = declarations.computeIfAbsent(prefix, ignored -> new HashSet<>());
+                for (String side : List.of("mixins", "client", "server")) {
+                    if (!config.has(side)) continue;
+                    for (var entry : config.getAsJsonArray(side)) registered.add(prefix + entry.getAsString());
+                }
+            }
+        }
+        String directories = System.getProperty("donut.mainClassDirectories");
+        assertNotNull(directories);
+        var forbidden = new ArrayList<String>();
+        int inspected = 0;
+        for (String directory : directories.split(java.util.regex.Pattern.quote(File.pathSeparator))) {
+            Path root = Path.of(directory);
+            if (!Files.isDirectory(root)) continue;
+            try (var paths = Files.walk(root)) {
+                for (Path file : paths.filter(p -> p.toString().endsWith(".class")).toList()) {
+                    String name = root.relativize(file).toString().replace(File.separatorChar, '/');
+                    name = name.substring(0, name.length() - ".class".length());
+                    for (var declaration : declarations.entrySet()) {
+                        if (!name.startsWith(declaration.getKey())) continue;
+                        inspected++;
+                        String outer = name.contains("$") ? name.substring(0, name.indexOf('$')) : name;
+                        if (!declaration.getValue().contains(outer)) forbidden.add(name);
+                    }
+                }
+            }
+        }
+        assertTrue(inspected > 0, "No compiled mixin classes were inspected");
+        assertTrue(forbidden.isEmpty(), () -> "Mixin reserves these packages: move ordinary runtime helpers outside them: "
+            + String.join(", ", forbidden));
+    }
+
     @Test void brightnessOverrideTargetsARealStoredGammaLocal() throws Exception {
         var mixin = read("dev/donut/addon/expansion/render/mixin/MixinDonutLightmap");
         var handler = mixin.methods.stream().filter(m -> m.name.equals("donut$immediateGamma")).findFirst().orElseThrow();

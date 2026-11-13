@@ -2,6 +2,7 @@ package dev.donut.addon.expansion.render.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.donut.addon.expansion.render.DonutClock;
+import dev.donut.addon.expansion.render.DonutClockIdentity;
 import net.minecraft.client.ClientClockManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

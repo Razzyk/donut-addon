@@ -1,5 +1,6 @@
 package dev.donut.addon.expansion.render.mixin;
 
+import dev.donut.addon.expansion.render.DonutClockIdentity;
 import net.minecraft.client.ClientClockManager;
 import net.minecraft.core.Holder;
 import net.minecraft.world.clock.WorldClock;

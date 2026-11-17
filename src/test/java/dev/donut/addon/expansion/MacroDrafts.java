@@ -9,6 +9,6 @@ final class MacroDrafts {
         return List.of(new DonutAuctionWatch(), new DonutListings(), new DonutSellLoop(),
             new DonutTradeOrders(), new DonutOrderCollector(), new DonutTravelRequests(),
             new DonutVisitorGuard(), new DonutQuickTransfer(), new DonutCrystalChain(),
-            new DonutAnchorChain(), new DonutChatKeys());
+            new DonutAnchorChain());
     }
 }

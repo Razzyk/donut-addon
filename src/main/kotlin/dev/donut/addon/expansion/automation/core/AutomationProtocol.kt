@@ -859,7 +859,6 @@ object AutomationProfileAliases {
         "panic-pay" to "donut-quick-transfer",
         "crystal-macro" to "donut-crystal-chain",
         "anchor-macro" to "donut-anchor-chain",
-        "chat-macro" to "donut-chat-keys",
     )
 
     /** Unlisted settings retain their exact ID. */

@@ -5,12 +5,9 @@ import dev.donut.addon.expansion.automation.core.MenuKind
 import dev.donut.addon.expansion.automation.core.MarketRules
 import net.ccbluex.liquidbounce.config.types.list.Tagged
 import net.ccbluex.liquidbounce.event.events.GameTickEvent
-import net.ccbluex.liquidbounce.event.events.KeyboardKeyEvent
-import net.ccbluex.liquidbounce.event.events.MouseButtonEvent
 import net.ccbluex.liquidbounce.event.events.PacketEvent
 import net.ccbluex.liquidbounce.event.events.TransferOrigin
 import net.ccbluex.liquidbounce.event.handler
-import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
 import kotlin.math.round
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -77,50 +74,6 @@ class DonutTravelRequests : DonutAutomationModule("Donut Travel Requests") {
         private const val MAX_SERVER_HOLD_SECONDS = 30.0
         private const val RATE_LIMIT_PADDING_NANOS = 80_000_000L
         private const val CONFIRM_WINDOW_NANOS = 3_000_000_000L
-    }
-}
-
-class DonutChatKeys : DonutAutomationModule("Donut Chat Keys") {
-    private enum class PressStyle(override val tag: String) : Tagged { SEND("Send"), OPEN("Open in Chat") }
-    private val slotCount by int("Slots", 3, 1..8)
-    private val pressStyle by enumChoice("On Press", PressStyle.SEND)
-    private val cooldown by float("Cooldown (s)", 1.0f, 1.0f..10.0f).onChange { value ->
-        if (!value.isFinite()) 1.0f else (1.0f + round((value - 1.0f) / 0.5f) * 0.5f).coerceIn(1.0f, 10.0f)
-    }
-    private val keys = (1..8).map { key("Macro $it Key") }
-    private val messages = (1..8).map { text("Macro $it Text", "") }
-    private var lastSendAt = 0L
-    private var sentAny = false
-
-    init { literalDescription { "Sends a configured message or opens it in chat when a bound key is pressed." } }
-    override fun onAutomationReset() { lastSendAt = 0L; sentAny = false }
-
-    @Suppress("unused")
-    private val keyboard = handler<KeyboardKeyEvent> { event ->
-        if (!event.isPressed || event.isRepeat) return@handler
-        handlePress(event.key, event.screen != null)
-    }
-
-    @Suppress("unused")
-    private val mouse = handler<MouseButtonEvent> { event ->
-        if (!event.isPressed) return@handler
-        handlePress(event.key, event.screen != null)
-    }
-
-    private fun handlePress(key: InputConstants.Key, hasEventScreen: Boolean) {
-        if (hasEventScreen || mc.gui.screen() != null) return
-        val frame = captureFrame() ?: return
-        val index = (0 until slotCount.coerceIn(1, 8)).firstOrNull { keys[it].get() == key } ?: return
-        val message = messages[index].get().trim()
-        if (message.isEmpty() || message.length > 256 || message.any(Char::isISOControl)) return
-        val now = System.nanoTime()
-        val minimumGap = (cooldown * 1_000_000_000.0).toLong()
-        if (pressStyle == PressStyle.SEND && sentAny && now - lastSendAt < minimumGap) return
-        val sent = when (pressStyle) {
-            PressStyle.OPEN -> openChat(frame, message)
-            PressStyle.SEND -> if (message.startsWith('/')) userCommand(frame, message) else chatText(frame, message)
-        }
-        if (sent && pressStyle == PressStyle.SEND) { lastSendAt = now; sentAny = true }
     }
 }
 

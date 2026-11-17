@@ -15,6 +15,7 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.world.phys.shapes.Shapes
 import kotlin.math.floor
 import kotlin.math.max
+import net.ccbluex.liquidbounce.utils.movement.DirectionalInput
 
 /** Plans short server-replayable steps before enabling local boat collision passthrough. */
 object DonutBoatPassage : ClientModule("DonutBoatPassage", AddonCategories.UTILITY, disableOnQuit = true) {
@@ -37,7 +38,7 @@ object DonutBoatPassage : ClientModule("DonutBoatPassage", AddonCategories.UTILI
     private var cullBefore: Boolean? = null
     init { literalDescription { "Move a boat through thin obstructions using bounded collision replay and packet steps." } }
 
-    override fun onEnabled() { DonutMountFlight.enabled = false; VehicleRuntime.reset() }
+    override fun onEnabled() = VehicleRuntime.reset()
     override fun onDisabled() { release(); VehicleRuntime.reset() }
     private fun release() {
         boat?.noPhysics = hadNoPhysics
@@ -144,6 +145,11 @@ object DonutBoatPassage : ClientModule("DonutBoatPassage", AddonCategories.UTILI
         movedLastTick = result.length() > .01
         current.deltaMovement = result
         return result
+    }
+    private fun travelVector(rider: LocalPlayer, speed: Double): MotionPolicy.Horizontal {
+        val keys = DirectionalInput(rider.input)
+        return MotionPolicy.horizontal(rider.yRot, (if (keys.forwards) 1 else 0) - (if (keys.backwards) 1 else 0),
+            (if (keys.left) 1 else 0) - (if (keys.right) 1 else 0), speed)
     }
     private fun chunksLoaded(box: AABB): Boolean {
         for (x in floor(box.minX / 16).toInt()..floor(box.maxX / 16).toInt())

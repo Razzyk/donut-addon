@@ -19,16 +19,6 @@ class MotionPolicyTest {
         assertEquals(10, MotionPolicy.jumpCooldown(10, 9, 4, 4));
         assertEquals(5, MotionPolicy.jumpCooldown(10, 3, 4, 2));
         assertEquals(0, MotionPolicy.jumpCooldown(10, 0, 0, 0));
-        assertFalse(MotionPolicy.jumpAllowed("Sprinting", true, false));
-        assertFalse(MotionPolicy.jumpAllowed("Walking", false, true));
-        assertTrue(MotionPolicy.jumpAllowed("Always", false, false));
     }
 
-    @Test void paddingMatchesTenBlockIntervalsWithoutUnboundedBursts() {
-        assertEquals(0, MotionPolicy.teleportPadding(10));
-        assertEquals(1, MotionPolicy.teleportPadding(10.1));
-        assertEquals(19, MotionPolicy.teleportPadding(200));
-        assertEquals(0, MotionPolicy.teleportPadding(210));
-        assertEquals(0, MotionPolicy.teleportPadding(Double.POSITIVE_INFINITY));
-    }
 }

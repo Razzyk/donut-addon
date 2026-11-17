@@ -26,7 +26,6 @@ private val previousBasefindingNames = mapOf(
     "Light Tracker" to "basefinder",
     "Chunk Finder" to "chunkfinder",
     "Light Scanner" to "chunkscanner",
-    "Spawner Finder" to "spawner-finder",
     "Storage Finder" to "StorageEsp+",
     "Suspicious Chunks" to "suschunkfinder",
     "Activity Inspector" to "v3",

@@ -9,13 +9,10 @@ import net.ccbluex.liquidbounce.event.events.ClientShutdownEvent
 import net.ccbluex.liquidbounce.event.handler
 
 object MovementFeatures {
-    val modules: List<ClientModule> = listOf(DonutTravelKeys, DonutHopAssist, DonutWallClimb, DonutCrouch, DonutPointTravel,
-        DonutStride, DonutFlightControl, DonutMountPace, DonutMountControl, DonutMountFlight, DonutBoatPassage,
-        DonutRiptideBoost, DonutSurfaceWalk)
+    val modules: List<ClientModule> = listOf(DonutBoatPassage)
     val listeners: List<EventListener> = listOf(VehicleRuntime, MovementSessionLifecycle)
     fun shutdown() {
-        DonutFlightControl.endFlightSession()
-        DonutSurfaceWalk.resetSurfaceSession()
+        VehicleRuntime.reset()
     }
 }
 

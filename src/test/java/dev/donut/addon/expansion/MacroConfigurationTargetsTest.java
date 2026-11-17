@@ -2,7 +2,6 @@ package dev.donut.addon.expansion;
 
 import com.google.gson.JsonParser;
 import dev.donut.addon.expansion.automation.DonutAutomationModule;
-import dev.donut.addon.expansion.automation.DonutChatKeys;
 import dev.donut.addon.expansion.automation.DonutQuickTransfer;
 import dev.donut.addon.expansion.automation.DonutTradeOrders;
 import net.ccbluex.liquidbounce.config.gson.GsonInstanceKt;
@@ -36,7 +35,7 @@ class MacroConfigurationTargetsTest {
         try (var stream = getClass().getResourceAsStream("/donut-addon/macro-migration.json")) {
             assertNotNull(stream);
             var schema = JsonParser.parseReader(new InputStreamReader(stream)).getAsJsonObject();
-            assertEquals(11, schema.getAsJsonArray("modules").size());
+            assertEquals(10, schema.getAsJsonArray("modules").size());
             for (var entry : schema.getAsJsonArray("modules")) {
                 var mapping = entry.getAsJsonObject();
                 var name = mapping.get("target").getAsString();
@@ -54,27 +53,18 @@ class MacroConfigurationTargetsTest {
     }
 
     @Test void migratedValuesDecodeWithTheClientsActualFileAdapters() {
-        var chat = new DonutChatKeys();
-        applyStoredValues(chat, """
-            {"name":"Donut Chat Keys","value":[
+        var orders = new DonutTradeOrders();
+        applyStoredValues(orders, """
+            {"name":"Donut Trade Orders","value":[
               {"name":"Bind","value":{"boundKey":"key.keyboard.f6","action":"Hold","modifiers":["Control"]}},
               {"name":"Options","value":[
-                {"name":"Macro 1 Key","value":{"boundKey":"key.mouse.right","action":"Toggle"}},
-                {"name":"Macro 1 Text","value":"/home"}]}]}
+                {"name":"Order Price","value":"Beat"},
+                {"name":"Order Price","value":"Fixed"}]}]}
             """);
-        var bind = (InputBind) setting(chat, "Bind").get();
+        var bind = (InputBind) setting(orders, "Bind").get();
         assertEquals(InputConstants.getKey("key.keyboard.f6"), bind.boundKey());
         assertEquals(InputBind.BindAction.HOLD, bind.action());
         assertEquals(Set.of(InputBind.Modifier.CONTROL), bind.modifiers());
-        assertEquals(InputConstants.getKey("key.mouse.right"), setting(chat, "Macro 1 Key").get());
-        assertEquals("/home", setting(chat, "Macro 1 Text").get());
-
-        var orders = new DonutTradeOrders();
-        applyStoredValues(orders, """
-            {"name":"Donut Trade Orders","value":[{"name":"Options","value":[
-              {"name":"Order Price","value":"Beat"},
-              {"name":"Order Price","value":"Fixed"}]}]}
-            """);
         assertEquals("Beat Top Order", setting(orders, "Product 1 Order Price").getValue());
         assertEquals("Fixed", setting(orders, "Product 2 Order Price").getValue());
     }

@@ -65,26 +65,6 @@ class NativeHookTargetsTest {
             + String.join(", ", forbidden));
     }
 
-    @Test void brightnessOverrideTargetsARealStoredGammaLocal() throws Exception {
-        var mixin = read("dev/donut/addon/expansion/render/mixin/MixinDonutLightmap");
-        var handler = mixin.methods.stream().filter(m -> m.name.equals("donut$immediateGamma")).findFirst().orElseThrow();
-        var declaration = annotation(annotations(handler), "ModifyVariable");
-        assertNotNull(declaration);
-        assertEquals(List.of("brightnessOption"), value(declaration, "name"));
-        var target = read("net/minecraft/client/renderer/LightmapRenderStateExtractor");
-        var extract = target.methods.stream().filter(m -> m.name.equals("extract")).findFirst().orElseThrow();
-        assertNotNull(extract.localVariables);
-        var gamma = extract.localVariables.stream()
-            .filter(local -> local.name.equals("brightnessOption") && local.desc.equals("F"))
-            .findFirst().orElseThrow();
-        boolean stored = false;
-        for (var instruction : extract.instructions) {
-            if (instruction instanceof org.objectweb.asm.tree.VarInsnNode variable &&
-                variable.getOpcode() == Opcodes.FSTORE && variable.var == gamma.index) stored = true;
-        }
-        assertTrue(stored, "native lightmap gamma must be a stored float local");
-    }
-
     @Test void accessorInterfacesTargetingClassesHaveNoHelperMethods() throws Exception {
         for (String configName : mixinConfigs()) {
         try (var resource = getClass().getResourceAsStream("/" + configName)) {

@@ -28,16 +28,7 @@ class LegacyMacroProfileMigrationTest {
         assertTrue(LegacyMacroProfileMigration.aliasesFor("Donut Crystal Chain").contains("Anubis Crystal Macro"));
     }
 
-    @Test void localChatMouseBindingsKeepTheirPhysicalKeyAndTransientRecipientsAreIgnored() {
-        var chat = JsonParser.parseString("""
-            {"name":"Anubis Chat Macro","value":[{"name":"Options","value":[
-              {"name":"Macro 1 Key","value":{"boundKey":"key.mouse.right","action":"Toggle"}},
-              {"name":"Macro 1 Text","value":"/home"}]}]}
-            """).getAsJsonObject();
-        LegacyMacroProfileMigration.flattenOptions("Donut Chat Keys", chat);
-        assertEquals("key.mouse.right", chat.getAsJsonArray("value").get(1).getAsJsonObject().get("value").getAsString());
-        assertEquals("/home", chat.getAsJsonArray("value").get(2).getAsJsonObject().get("value").getAsString());
-
+    @Test void transientPaymentRecipientsAreIgnored() {
         var payment = JsonParser.parseString("""
             {"name":"Anubis Panic Pay","value":[{"name":"Options","value":[
               {"name":"Pay To","value":"OldRecipient"},{"name":"Sell Armor","value":false}]}]}

@@ -18,7 +18,7 @@ class MacroLifecycleTest {
 
     @Test void automationCannotRestoreAnEnabledStateFromAProfile() {
         var drafts = MacroDrafts.modules();
-        assertEquals(11, drafts.size());
+        assertEquals(10, drafts.size());
         assertTrue(AutomationFeatures.INSTANCE.getModules().isEmpty(), "unfinished replacements must not duplicate existing macros");
         for (var module : drafts) {
             assertFalse(module.getEnabledValue().isPersistent(), module.getName());

@@ -21,20 +21,7 @@ object MotionPolicy {
     }
 
     @JvmStatic
-    fun jumpAllowed(condition: String, moving: Boolean, sprinting: Boolean): Boolean = when (condition) {
-        "Sprinting" -> moving && sprinting
-        "Walking" -> moving
-        else -> true
-    }
-
-    @JvmStatic
     fun jumpCooldown(vanilla: Int, chosen: Int, variance: Int, sample: Int): Int =
         minOf(vanilla, chosen.coerceIn(0, 9) + sample.coerceIn(0, variance.coerceIn(0, 4)))
 
-    @JvmStatic
-    fun teleportPadding(distance: Double): Int {
-        if (!distance.isFinite() || distance <= 0.0) return 0
-        val count = kotlin.math.ceil(distance / 10.0).toInt() - 1
-        return if (count > 19) 0 else count.coerceAtLeast(0)
-    }
 }

@@ -1,21 +1,16 @@
 package dev.donut.addon.expansion.utility
 
-import dev.donut.addon.expansion.presence.PresenceText
 import net.ccbluex.liquidbounce.config.types.list.Tagged
-import net.ccbluex.liquidbounce.event.events.GameTickEvent
 import net.ccbluex.liquidbounce.event.events.KeyboardKeyEvent
-import net.ccbluex.liquidbounce.event.events.PacketEvent
 import net.ccbluex.liquidbounce.event.events.NotificationEvent
+import net.ccbluex.liquidbounce.event.events.PacketEvent
 import net.ccbluex.liquidbounce.event.events.TransferOrigin
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.notification
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
-import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
-import net.minecraft.network.chat.Component
-import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.phys.BlockHitResult
 import java.net.URI
@@ -25,83 +20,6 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.Locale
 import java.util.concurrent.Executors
-
-/** Repeats configured messages at a controlled pace, with optional split and text variation. */
-class DonutChatFaucet : DonutUtilityModule("Donut Chat Faucet", "Sends configured chat messages on a timer with optional splitting and text variation.") {
-    private val messages by textList("Messages", mutableListOf())
-    private val delay by float("Delay", 20f, 0f..1_200f)
-    private val disableOnLeave by boolean("Disable On Leave", true)
-    private val disableOnDisconnect by boolean("Disable On Disconnect", true)
-    private val randomize by boolean("Randomise", false)
-    private val autoSplit by boolean("Auto Split Messages", false)
-    private val splitLength by int("Split Length", 256, 1..256)
-    private val splitDelay by float("Split Delay", 20f, 0f..200f)
-    private val varyText by boolean("Bypass", false)
-    private val uppercase by boolean("Include Uppercase Characters", true)
-    private val variationLength by int("Length", 16, 1..256)
-    private var connection: Any? = null
-    private var lastWorld: Any? = null
-    private var nextSendAt = 0L
-    private var messageIndex = 0
-    private var pieces = emptyList<String>()
-    private var pieceIndex = 0
-
-    override fun onEnabled() { connection = mc.connection; lastWorld = mc.level; nextSendAt = 0; messageIndex = 0; pieces = emptyList(); pieceIndex = 0 }
-    override fun onDisabled() { connection = null; lastWorld = null; pieces = emptyList(); pieceIndex = 0 }
-
-    override fun onUtilityWorldChanging(world: ClientLevel?) {
-        val hadConnection = connection != null
-        val disconnected = world == null || mc.connection == null
-        val changedSession = connection != null && (
-            mc.connection !== connection || world != null && lastWorld != null && world !== lastWorld
-        )
-        val disableForTransition = hadConnection &&
-            (if (disconnected) disableOnDisconnect else changedSession && disableOnLeave)
-        super.onUtilityWorldChanging(world)
-        if (disableForTransition && enabled) enabled = false
-    }
-
-    @Suppress("unused")
-    private val tick = handler<GameTickEvent> {
-        val network = mc.connection
-        val level = mc.level
-        if (network == null || level == null) {
-            if (connection != null && disableOnDisconnect) enabled = false
-            connection = null; lastWorld = null
-            return@handler
-        }
-        if (connection != null && (network !== connection || level !== lastWorld) && disableOnLeave) { enabled = false; return@handler }
-        connection = network; lastWorld = level
-        val now = System.nanoTime()
-        if (now < nextSendAt) return@handler
-        if (pieceIndex >= pieces.size) {
-            val source = messages.map(String::trim).filter(String::isNotEmpty)
-            if (source.isEmpty()) return@handler
-            val selected = if (randomize) source.random() else source[messageIndex++ % source.size]
-            val transformed = if (varyText) vary(selected) else selected
-            pieces = if (autoSplit) transformed.chunked(splitLength.coerceIn(1, 256)) else listOf(transformed.take(256))
-            pieceIndex = 0
-        }
-        val connectionNow = mc.connection ?: return@handler
-        connectionNow.sendChat(pieces[pieceIndex++])
-        nextSendAt = now + ((if (pieceIndex < pieces.size) splitDelay else delay).coerceIn(0f, 1_200f) * 1_000_000_000.0).toLong()
-    }
-
-    private fun vary(value: String): String {
-        val length = variationLength.coerceIn(1, 256)
-        val upper = uppercase
-        val random = kotlin.random.Random(System.nanoTime())
-        return buildString(value.length.coerceAtMost(length)) {
-            value.take(length).forEach { ch ->
-                when {
-                    ch.isLetter() && random.nextInt(4) == 0 -> append(if (upper) ch.uppercaseChar() else ch.lowercaseChar())
-                    ch.isLetter() && !upper && random.nextInt(5) == 0 -> append(ch.lowercaseChar())
-                    else -> append(ch)
-                }
-            }
-        }
-    }
-}
 
 /** Key-triggered coordinate copy with raycast, formatting, dimension label, and opt-in webhook. */
 class DonutCoordinateSnapper : DonutUtilityModule("Donut Coordinate Snapper", "Copies your position or a looked-at block position when its key is pressed.") {
@@ -165,30 +83,6 @@ class DonutCoordinateSnapper : DonutUtilityModule("Donut Coordinate Snapper", "C
     }
 
     private fun jsonEscape(value: String): String = value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
-}
-
-/** Watches stable world weather changes and notifies when rain begins. */
-class DonutWeatherNotice : DonutUtilityModule("Donut Weather Notice", "Shows an advancement-style alert when rain begins in the current world.") {
-    private val sound by boolean("Sound", true)
-    private var observedWorld: Any? = null
-    private var raining = false
-    private var changedTicks = 0
-
-    override fun onEnabled() { observedWorld = null; changedTicks = 0 }
-    override fun onDisabled() { observedWorld = null; changedTicks = 0 }
-
-    @Suppress("unused")
-    private val tick = handler<GameTickEvent> {
-        val level = mc.level ?: run { observedWorld = null; return@handler }
-        if (observedWorld !== level) { observedWorld = level; raining = level.isRaining; changedTicks = 0; return@handler }
-        if (level.isRaining == raining) { changedTicks = 0; return@handler }
-        if (++changedTicks < 20) return@handler
-        raining = level.isRaining; changedTicks = 0
-        if (raining) {
-            notification("Weather Changed!", "It started raining.", NotificationEvent.Severity.INFO)
-            if (sound) mc.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f))
-        }
-    }
 }
 
 /** Announces first sightings of chosen block types from server block-update packets. */

@@ -57,7 +57,7 @@ class AnubisAdapterTest {
 
     @Test void allMacroModulesConstructAndInitializeSettingsWithoutEnabling() {
         var modules = AnubisFeatures.INSTANCE.getModules();
-        assertEquals(11, modules.size());
+        assertEquals(10, modules.size());
         for (var module : modules) {
             assertSame(AddonCategories.MACROS, module.getCategory());
             assertFalse(module.getEnabled());

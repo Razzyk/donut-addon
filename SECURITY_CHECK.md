@@ -1,0 +1,7 @@
+The addon runs a local SilentNET indicator check once at game launch, on a background thread. When a match is found, it waits for a loaded world and shows one local chat warning with the analysis link, a false-positive caveat, and recovery guidance.
+
+It checks mod JARs and file-based Fabric mod origins against published sample hashes and corroborated loader indicators. On Windows it also checks the complete, paired staging-file layout described in the [Malwation analysis](https://www.malwation.com/blog/inside-silentnet-analysis-of-a-java-based-infostealer-with-blockchain-based-c2). A mod name, a normal Python installation, or one suspicious folder alone is insufficient.
+
+The check reads files; it does not execute them, upload data, remove files, or contact malware infrastructure. Work is bounded, and skipped/unreadable files make the check incomplete. No warning does **not** prove the computer is clean. This advisory cannot stop another mod that has already executed, and cannot identify every variant.
+
+If warned, treat the match as something to investigate. Disconnect the affected computer and seek trusted security help. Secure accounts and revoke sessions from a clean device. A confirmed infection may require a clean OS reinstall/factory reset; deleting a mod alone may leave other components. See [Microsoft's malware recovery guidance](https://support.microsoft.com/en-au/defender/troubleshoot-problems-with-detecting-and-removing-malware).

@@ -45,6 +45,12 @@ import dev.donut.addon.expansion.automation.core.MarketRules
 import dev.donut.addon.expansion.automation.core.PlannedEffect
 import dev.donut.addon.expansion.automation.core.SessionStamp
 import dev.donut.addon.expansion.automation.core.SlotSnapshot
+import dev.donut.addon.navigation.DonutNavigationBridge
+import dev.donut.addon.navigation.NavigationBackend
+import dev.donut.addon.navigation.NavigationStatus
+import net.ccbluex.liquidbounce.event.EventListener
+import net.ccbluex.liquidbounce.event.events.CancelBlockBreakingEvent
+import net.ccbluex.liquidbounce.injection.mixins.minecraft.network.MixinMultiPlayerGameModeAccessor
 import net.ccbluex.liquidbounce.event.events.GameTickEvent
 import net.ccbluex.liquidbounce.event.events.KeyboardKeyEvent
 import net.ccbluex.liquidbounce.event.events.MovementInputEvent
@@ -58,6 +64,7 @@ import net.ccbluex.liquidbounce.utils.aiming.RotationTarget
 import net.ccbluex.liquidbounce.utils.aiming.data.Rotation
 import net.ccbluex.liquidbounce.utils.aiming.features.MovementCorrection
 import net.ccbluex.liquidbounce.utils.client.chat
+import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.kotlin.Priority
 import net.ccbluex.liquidbounce.utils.movement.DirectionalInput
 import net.minecraft.client.multiplayer.ClientLevel
@@ -100,6 +107,7 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.world.Container
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
@@ -329,7 +337,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     private val ahRefreshMs by int("AH Refresh (ms)", 1_000, 300..3_000)
     private val climbWithLeaves by boolean("Climb With Leaves", true)
     private val supportLeaves by boolean("Support Leaves", true)
-    private val walkWithBaritone by boolean("Walk With Baritone", false)
+    private val walkWithNavigation by boolean("Walk With Navigation", true, aliases = listOf("Walk With Baritone"))
     private val crafterSlots by boolean("Crafter Slots", true)
     private val repeatersComparators by boolean("Repeaters & Comparators", true)
     private val placeWaterLava by boolean("Place Water & Lava", true)
@@ -519,6 +527,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     private var truncatedReported = false
     private var lastMessage = ""
     private var lastMessageTick = Long.MIN_VALUE
+    private var navigationFallbackReported = false
     private var eatingTicks = 0
     private var eating = false
     private var eatingStartFood = -1
@@ -876,7 +885,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
             beginSnapshot()
             return@handler
         }
-        if (!walkWithBaritone) BaritoneGoalBridge.cancelOwned(this)
+        if (!walkWithNavigation) SchematicNavigationBridge.cancelOwned(this)
         val sellNeedsFrame = sellWorkflow.status() != DonutSellStatus.IDLE ||
             sellLeftovers && buildFullyComplete && phase == SchematicPhase.COMPLETE && !sellFinishedForRun
         val purchaseFrame = if (activePurchaseItemId != null || sellNeedsFrame) captureAuctionFrame(player, world, connection) else null
@@ -1317,7 +1326,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     private fun restartSchematicScan() {
         runGeneration++
         cancelDigOutTask()
-        BaritoneGoalBridge.cancelOwned(this)
+        SchematicNavigationBridge.cancelOwned(this)
         activeScaffoldTask = null
         waitingForPlacement = null
         placementSentAt = 0
@@ -2109,7 +2118,21 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     }
 
     private fun stopDigOutDestroy() {
+        activeDigOutTask?.takeIf { it.stage == SchematicDigOutStage.DESTROYING }?.stage = SchematicDigOutStage.WAITING_ACK
         mc.gameMode?.stopDestroyBlock()
+    }
+
+    private fun ownsCurrentDigOutSession(task: SchematicDigOutTask): Boolean {
+        val player = mc.player ?: return false
+        val world = mc.level as? ClientLevel ?: return false
+        val connection = mc.connection ?: return false
+        val gameMode = mc.gameMode ?: return false
+        return task.generation == runGeneration &&
+            task.connectionId == System.identityHashCode(connection).toLong() &&
+            task.worldId == System.identityHashCode(world).toLong() &&
+            task.playerId == System.identityHashCode(player).toLong() &&
+            gameMode.isDestroying &&
+            (gameMode as MixinMultiPlayerGameModeAccessor).`liquid_bounce$getDestroyBlockPos`() == task.target.toBlockPos()
     }
 
     private fun scaffoldItemCount(stack: ItemStack): Int {
@@ -2156,9 +2179,9 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
         expected: BlockState,
         stack: net.minecraft.world.item.ItemStack,
     ): Boolean {
-        if (walkWithBaritone) {
-            val trackedStand = BaritoneGoalBridge.trackedStand(this, target)
-            val baritoneStand = trackedStand?.takeIf { stand ->
+        if (walkWithNavigation) {
+            val trackedStand = SchematicNavigationBridge.trackedStand(this, target)
+            val navigationStand = trackedStand?.takeIf { stand ->
                 val standEye = eyeAtFeet(world, player, stand) ?: return@takeIf false
                 canStandAt(world, player, stand) && withinUseReach(world, player, stand, target.toBlockPos()) &&
                     SchematicNativePlacement.findCandidate(
@@ -2170,21 +2193,27 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
                         allowPartialDoubleSlab = allowPartialDoubleSlab(expected, world.getBlockState(target.toBlockPos())),
                         coarseSearch = true,
                     ) != null
-            } ?: findSafeBaritoneStand(player, world, target, expected, stack)
-            if (baritoneStand != null) {
+            } ?: findSafeNavigationStand(player, world, target, expected, stack)
+            if (navigationStand != null) {
                 val current = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
-                if (current == baritoneStand) {
-                    BaritoneGoalBridge.cancelOwned(this, target)
+                if (current == navigationStand) {
+                    SchematicNavigationBridge.cancelOwned(this, target)
                     routeTarget = null
                     return true
                 }
-                if (BaritoneGoalBridge.walkTo(this, target, baritoneStand)) return true
-                BaritoneGoalBridge.cancelOwned(this, target)
+                if (SchematicNavigationBridge.walkTo(this, target, navigationStand, world)) {
+                    route = emptyList()
+                    routeIndex = 0
+                    routeTarget = target
+                    return true
+                }
+                reportNavigationFallback()
             } else {
-                BaritoneGoalBridge.cancelOwned(this)
+                SchematicNavigationBridge.cancelOwned(this)
+                reportNavigationFallback()
             }
         } else {
-            BaritoneGoalBridge.cancelOwned(this)
+            SchematicNavigationBridge.cancelOwned(this)
         }
         if (routeTarget != target || route.isEmpty()) {
             val start = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
@@ -2249,7 +2278,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
         return routeIndex < route.size
     }
 
-    private fun findSafeBaritoneStand(
+    private fun findSafeNavigationStand(
         player: LocalPlayer,
         world: ClientLevel,
         target: BuildCellPos,
@@ -3155,6 +3184,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
 
     @Suppress("unused")
     private val movement = handler<MovementInputEvent> { event ->
+        if (DonutNavigationBridge.shouldYieldLocalControl(this)) return@handler
         if (mc.gui.screen() != null) return@handler
         val player = mc.player ?: return@handler
         val pillar = activePillarTask
@@ -3183,7 +3213,16 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     }
 
     @Suppress("unused")
+    private val preserveOwnedDigOutBreaking = handler<CancelBlockBreakingEvent> { event ->
+        val task = activeDigOutTask ?: return@handler
+        if (task.stage == SchematicDigOutStage.DESTROYING && ownsCurrentDigOutSession(task)) {
+            event.cancelEvent()
+        }
+    }
+
+    @Suppress("unused")
     private val rotation = handler<RotationUpdateEvent> {
+        if (DonutNavigationBridge.shouldYieldLocalControl(this)) return@handler
         val player = mc.player ?: return@handler
         val pillar = activePillarTask
         if (pillar != null) {
@@ -3563,7 +3602,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
 
     private fun advancePlacementFailure(pos: BuildCellPos, reason: String) {
         releaseSneakLease()
-        BaritoneGoalBridge.cancelOwned(this, pos)
+        SchematicNavigationBridge.cancelOwned(this, pos)
         val decision = retryLedger.recordFailure(pos)
         when (decision) {
             RetryDecision.RETRY -> message("${pos.asText()}: $reason; retry ${retryLedger.failures(pos)}/8.", false)
@@ -3613,7 +3652,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     }
 
     private fun completeTarget(pos: BuildCellPos, relaxed: Boolean) {
-        BaritoneGoalBridge.cancelOwned(this, pos)
+        SchematicNavigationBridge.cancelOwned(this, pos)
         releaseSneakLease()
         waitingForPlacement = null
         retryLedger.clearPosition(pos)
@@ -3978,6 +4017,36 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     }
 
     private fun walkTowardCrafter(player: LocalPlayer, world: ClientLevel, target: BuildCellPos): Boolean {
+        if (walkWithNavigation) {
+            val tracked = SchematicNavigationBridge.trackedStand(this, target)
+            val stand = tracked?.takeIf { feet ->
+                val eye = eyeAtFeet(world, player, feet) ?: return@takeIf false
+                canStandAt(world, player, feet) && canSeeCrafterFrom(world, player, target.toBlockPos(), eye)
+            } ?: findSafeNavigationCrafterStand(player, world, target)
+            if (stand != null) {
+                val current = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
+                if (current == stand) {
+                    SchematicNavigationBridge.cancelOwned(this, target)
+                    route = emptyList()
+                    routeIndex = 0
+                    routeTarget = null
+                    return false
+                }
+                if (SchematicNavigationBridge.walkTo(this, target, stand, world)) {
+                    route = emptyList()
+                    routeIndex = 0
+                    routeTarget = target
+                    return true
+                }
+                reportNavigationFallback()
+            } else {
+                SchematicNavigationBridge.cancelOwned(this)
+                reportNavigationFallback()
+            }
+        } else {
+            SchematicNavigationBridge.cancelOwned(this)
+        }
+
         if (routeTarget != target || route.isEmpty()) {
             val start = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
             val result = SchematicStandPlanner.findRoute(
@@ -4013,6 +4082,28 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
             return false
         }
         return true
+    }
+
+    private fun findSafeNavigationCrafterStand(
+        player: LocalPlayer,
+        world: ClientLevel,
+        target: BuildCellPos,
+    ): BuildCellPos? {
+        val current = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
+        val candidates = buildList {
+            for (dy in -3..1) for (dx in -3..3) for (dz in -3..3) {
+                if (kotlin.math.abs(dx) + kotlin.math.abs(dz) > 4) continue
+                add(target.offset(dx, dy, dz))
+            }
+        }.sortedBy { candidate -> distanceSquared(current, candidate) }
+        var checks = 0
+        for (candidate in candidates) {
+            if (++checks > 96) break
+            if (!canStandAt(world, player, candidate)) continue
+            val eye = eyeAtFeet(world, player, candidate) ?: continue
+            if (canSeeCrafterFrom(world, player, target.toBlockPos(), eye)) return candidate
+        }
+        return null
     }
 
     private fun canSeeCrafterFrom(world: ClientLevel, player: LocalPlayer, target: BlockPos, eye: Vec3): Boolean {
@@ -5573,43 +5664,34 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     }
 
     private fun walkTowardWaterlog(player: LocalPlayer, world: ClientLevel, target: BuildCellPos): Boolean {
-        if (walkWithBaritone) {
-            val tracked = BaritoneGoalBridge.trackedStand(this, target)
+        if (walkWithNavigation) {
+            val tracked = SchematicNavigationBridge.trackedStand(this, target)
             val stand = tracked?.takeIf { feet ->
                 val eye = eyeAtFeet(world, player, feet) ?: return@takeIf false
                 canStandAt(world, player, feet) && withinUseReach(world, player, feet, target.toBlockPos()) &&
                     findWaterlogAim(world, player, target, eye) != null
-            } ?: run {
-                var checks = 0
-                val start = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
-                val routeResult = SchematicStandPlanner.findRoute(
-                    start,
-                    isGoal = { feet ->
-                        if (++checks > 96 || !canStandAt(world, player, feet)) return@findRoute false
-                        val eye = eyeAtFeet(world, player, feet) ?: return@findRoute false
-                        withinUseReach(world, player, feet, target.toBlockPos()) &&
-                            findWaterlogAim(world, player, target, eye) != null
-                    },
-                    canStand = { feet -> canStandAt(world, player, feet) },
-                    canTransition = { from, to -> SchematicRouteRules.allows(from, to) && safeTransition(world, player, from, to) },
-                    visitBudget = ROUTE_BUDGET,
-                )
-                routeResult.route?.lastOrNull() ?: if (routeResult.route != null && start == target) start else null
-            }
+            } ?: findSafeNavigationWaterlogStand(player, world, target)
             if (stand != null) {
                 val current = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
                 if (current == stand) {
-                    BaritoneGoalBridge.cancelOwned(this, target)
+                    SchematicNavigationBridge.cancelOwned(this, target)
                     route = emptyList()
                     routeTarget = null
                     return false
                 }
-                if (BaritoneGoalBridge.walkTo(this, target, stand)) return true
+                if (SchematicNavigationBridge.walkTo(this, target, stand, world)) {
+                    route = emptyList()
+                    routeIndex = 0
+                    routeTarget = target
+                    return true
+                }
+                reportNavigationFallback()
             } else {
-                BaritoneGoalBridge.cancelOwned(this)
+                SchematicNavigationBridge.cancelOwned(this)
+                reportNavigationFallback()
             }
         } else {
-            BaritoneGoalBridge.cancelOwned(this)
+            SchematicNavigationBridge.cancelOwned(this)
         }
 
         if (routeTarget != target || route.isEmpty()) {
@@ -5652,6 +5734,28 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
         return routeIndex < route.size
     }
 
+    private fun findSafeNavigationWaterlogStand(
+        player: LocalPlayer,
+        world: ClientLevel,
+        target: BuildCellPos,
+    ): BuildCellPos? {
+        val current = player.blockPosition().let { BuildCellPos(it.x, it.y, it.z) }
+        val candidates = buildList {
+            for (dy in -3..1) for (dx in -3..3) for (dz in -3..3) {
+                if (kotlin.math.abs(dx) + kotlin.math.abs(dz) > 4) continue
+                add(target.offset(dx, dy, dz))
+            }
+        }.sortedBy { candidate -> distanceSquared(current, candidate) }
+        var checks = 0
+        for (candidate in candidates) {
+            if (++checks > 96) break
+            if (!canStandAt(world, player, candidate) || !withinUseReach(world, player, candidate, target.toBlockPos())) continue
+            val eye = eyeAtFeet(world, player, candidate) ?: continue
+            if (findWaterlogAim(world, player, target, eye) != null) return candidate
+        }
+        return null
+    }
+
     private fun findWaterlogAim(
         world: ClientLevel,
         player: LocalPlayer,
@@ -5688,7 +5792,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
         pendingWaterlogCells -= task.target
         unresolvedCells += task.target
         waterlogTask = null
-        BaritoneGoalBridge.cancelOwned(this, task.target)
+        SchematicNavigationBridge.cancelOwned(this, task.target)
         route = emptyList()
         routeIndex = 0
         routeTarget = null
@@ -5803,7 +5907,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
                 if (currentState.hasProperty(BlockStateProperties.WATERLOGGED) && currentState.getValue(BlockStateProperties.WATERLOGGED)) {
                     pendingWaterlogCells -= task.target
                     waterlogTask = null
-                    BaritoneGoalBridge.cancelOwned(this, task.target)
+                    SchematicNavigationBridge.cancelOwned(this, task.target)
                     route = emptyList()
                     routeTarget = null
                     message("Waterlogging at ${task.target.asText()} was confirmed by both block and bucket inventory updates.", false)
@@ -6249,7 +6353,7 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     }
 
     private fun resetRun() {
-        BaritoneGoalBridge.cancelOwned(this)
+        SchematicNavigationBridge.cancelOwned(this)
         cancelDigOutTask()
         releaseSneakLease()
         resetBuildData()
@@ -6307,8 +6411,9 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
     }
 
     private fun cancelDigOutTask() {
-        if (activeDigOutTask?.stage == SchematicDigOutStage.DESTROYING) mc.gameMode?.stopDestroyBlock()
+        val task = activeDigOutTask
         activeDigOutTask = null
+        if (task?.stage == SchematicDigOutStage.DESTROYING) mc.gameMode?.stopDestroyBlock()
     }
 
     private fun resetBuildData() {
@@ -6368,88 +6473,115 @@ object DonutSchematicBuilder : ClientModule("Donut Schematic Builder", AddonCate
 
     private fun message(text: String, warn: Boolean) {
         if (!warn && !chatFeedback) return
-        if (text == lastMessage && tick - lastMessageTick < 40) return
+        if (text == lastMessage && lastMessageTick != Long.MIN_VALUE && tick >= lastMessageTick && tick - lastMessageTick < 40L) return
         lastMessage = text
         lastMessageTick = tick
         net.ccbluex.liquidbounce.utils.client.chat(Component.literal("[Donut Schematic Builder] $text"), this)
     }
+
+    internal fun reportNavigationFallback(nativeStalled: Boolean = false) {
+        if (!walkWithNavigation || navigationFallbackReported) return
+        if (!nativeStalled && DonutNavigationBridge.status(this)?.backend != NavigationBackend.LEGACY_FALLBACK_REQUIRED) return
+        navigationFallbackReported = true
+        message(
+            if (nativeStalled) "LiquidBounce walking made no progress for 12 seconds; switching to the bounded local route planner."
+            else "LiquidBounce walking navigation is unavailable on this client; using the bounded local route planner.",
+            true,
+        )
+    }
 }
 
-/** Optional Baritone API, resolved only when requested; the builder remains bounded without it. */
-private object BaritoneGoalBridge {
+/** Owner-scoped adapter: native LiquidBounce walking first, the builder's bounded planner on stable clients. */
+private object SchematicNavigationBridge {
     private var owner: Any? = null
     private var target: BuildCellPos? = null
     private var stand: BuildCellPos? = null
-    private var process: Any? = null
-    private var goal: Any? = null
+    private var stalledOwner: Any? = null
+    private var stalledTarget: BuildCellPos? = null
+    private var stalledWorld: WeakReference<ClientLevel>? = null
+    private var lastPosition: Vec3? = null
+    private var lastProgressAtNanos = 0L
 
     fun trackedStand(ownerToken: Any, targetPos: BuildCellPos): BuildCellPos? {
         if (owner !== ownerToken || target != targetPos) return null
-        val currentProcess = process ?: return null
-        return if (currentGoal(currentProcess) === goal) stand else null
+        val eventOwner = ownerToken as? EventListener ?: return null
+        val snapshot = DonutNavigationBridge.status(eventOwner) ?: return null
+        if (snapshot.backend != NavigationBackend.NATIVE || snapshot.status in setOf(
+                NavigationStatus.CANCELLED,
+                NavigationStatus.UNAVAILABLE,
+            )) return null
+        return stand
     }
 
-    fun walkTo(ownerToken: Any, targetPos: BuildCellPos, safeStand: BuildCellPos): Boolean = runCatching {
-        val loader = Thread.currentThread().contextClassLoader ?: javaClass.classLoader
-        val api = Class.forName("baritone.api.BaritoneAPI", false, loader)
-        val provider = api.getMethod("getProvider").invoke(null)
-        val baritone = provider.javaClass.getMethod("getPrimaryBaritone").invoke(provider)
-        val goalProcess = baritone.javaClass.getMethod("getCustomGoalProcess").invoke(baritone)
-        val currentSettings = api.getMethod("getSettings").invoke(null)
-        if (readBooleanSetting(currentSettings, "allowBreak") != false ||
-            readBooleanSetting(currentSettings, "allowPlace") != false) {
-            cancelOwned(ownerToken)
-            return@runCatching false
+    fun walkTo(ownerToken: Any, targetPos: BuildCellPos, safeStand: BuildCellPos, world: ClientLevel): Boolean {
+        if (stalledOwner === ownerToken && stalledTarget == targetPos && stalledWorld?.get() === world) return false
+        if (stalledOwner != null) {
+            clearStalledFallback()
         }
-
-        if (owner === ownerToken && target == targetPos && stand == safeStand) {
-            if (process === goalProcess && currentGoal(goalProcess) === goal) return@runCatching true
+        val eventOwner = ownerToken as? EventListener ?: return false
+        val surfaceY = SchematicStandSurface.surfaceY(world, safeStand) ?: run {
+            cancelOwned(ownerToken, targetPos)
+            return false
+        }
+        val goal = Vec3(safeStand.x + 0.5, surfaceY, safeStand.z + 0.5)
+        val snapshot = DonutNavigationBridge.update(eventOwner, world, goal, NATIVE_GOAL_RADIUS)
+        if (snapshot.backend != NavigationBackend.NATIVE) {
             clearTracking()
-        } else if (owner != null) {
-            cancelOwned(ownerToken)
+            return false
         }
-        val current = currentGoal(goalProcess)
-        if (current != null) return@runCatching false
-        val goalClass = Class.forName("baritone.api.pathing.goals.GoalBlock", false, loader)
-        val goal = goalClass.getConstructor(Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
-            .newInstance(safeStand.x, safeStand.y, safeStand.z)
-        goalProcess.javaClass.methods.first { it.name == "setGoalAndPath" && it.parameterCount == 1 }.invoke(goalProcess, goal)
+        val position = mc.player?.position()
+        val now = System.nanoTime()
+        if (owner !== ownerToken || target != targetPos || stand != safeStand) {
+            lastProgressAtNanos = now
+            lastPosition = position
+        } else if (snapshot.status in NON_PROGRESS_TIMEOUT_EXEMPT) {
+            lastProgressAtNanos = now
+            lastPosition = position
+        } else if (position != null && lastPosition?.distanceToSqr(position)?.let { it >= PROGRESS_DISTANCE_SQUARED } == true) {
+            lastProgressAtNanos = now
+            lastPosition = position
+        } else if (now - lastProgressAtNanos >= NO_PROGRESS_TIMEOUT_NANOS) {
+            DonutNavigationBridge.cancel(eventOwner)
+            DonutSchematicBuilder.reportNavigationFallback(nativeStalled = true)
+            stalledOwner = ownerToken
+            stalledTarget = targetPos
+            stalledWorld = WeakReference(world)
+            clearTracking()
+            return false
+        }
         this.owner = ownerToken
         this.target = targetPos
         this.stand = safeStand
-        this.process = goalProcess
-        this.goal = goal
-        true
-    }.getOrDefault(false)
+        return true
+    }
 
     fun cancelOwned(ownerToken: Any, targetPos: BuildCellPos? = null) {
         if (owner !== ownerToken || targetPos != null && target != targetPos) return
-        val currentProcess = process
-        val expectedGoal = goal
-        if (currentProcess != null && expectedGoal != null && currentGoal(currentProcess) === expectedGoal) {
-            runCatching {
-                currentProcess.javaClass.methods.first { it.name == "setGoalAndPath" && it.parameterCount == 1 }
-                    .invoke(currentProcess, null)
-            }
-        }
+        (ownerToken as? EventListener)?.let(DonutNavigationBridge::cancel)
         clearTracking()
     }
-
-    private fun currentGoal(goalProcess: Any): Any? = runCatching {
-        goalProcess.javaClass.methods.first { it.name == "getGoal" && it.parameterCount == 0 }.invoke(goalProcess)
-    }.getOrNull()
-
-    private fun readBooleanSetting(settings: Any, name: String): Boolean? = runCatching {
-        val setting = settings.javaClass.getField(name).get(settings)
-        val valueField = setting.javaClass.getField("value")
-        valueField.get(setting) as? Boolean
-    }.getOrNull()
 
     private fun clearTracking() {
         owner = null
         target = null
         stand = null
-        process = null
-        goal = null
+        lastPosition = null
+        lastProgressAtNanos = 0L
     }
+
+    private fun clearStalledFallback() {
+        stalledOwner = null
+        stalledTarget = null
+        stalledWorld = null
+    }
+
+    private val NON_PROGRESS_TIMEOUT_EXEMPT = setOf(
+        NavigationStatus.INPUT_PAUSED,
+        NavigationStatus.WORLD_UNAVAILABLE,
+        NavigationStatus.CONFLICT,
+        NavigationStatus.PREEMPTED,
+    )
+    private const val PROGRESS_DISTANCE_SQUARED = 0.04
+    private const val NO_PROGRESS_TIMEOUT_NANOS = 12_000_000_000L
+    private const val NATIVE_GOAL_RADIUS = 0.35
 }

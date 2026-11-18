@@ -33,7 +33,6 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import java.util.UUID
-import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.floor
 import kotlin.math.sqrt
 
@@ -53,9 +52,9 @@ class DonutPresenceWatch : DonutPresenceModule("Donut Presence Watch") {
     private val showHud by boolean("Show HUD", true).onChanged { PresenceFeatures.syncHudState() }
     private val vanishState = DonutVanishState()
     private val ledger = PresenceEvidenceLedger()
-    private val packetQueue = ConcurrentLinkedQueue<SignalNotice>()
-    private val hints = ConcurrentLinkedQueue<Hint>()
-    private val gameModes = ConcurrentLinkedQueue<GameModeHint>()
+    private val packetQueue = BoundedPresenceInbox<SignalNotice>(4_096)
+    private val hints = BoundedPresenceInbox<Hint>(4_096)
+    private val gameModes = BoundedPresenceInbox<GameModeHint>(4_096)
     private val deferredHints = arrayListOf<Hint>()
     private val tabMoves = ArrayDeque<Hint>()
     private val recentTeamEvents = ArrayDeque<Long>()
@@ -209,7 +208,7 @@ class DonutPresenceWatch : DonutPresenceModule("Donut Presence Watch") {
     }
 
     private fun processPackets(network: ClientPacketListener) {
-        while (true) {
+        for (processed in 0 until 512) {
             val notice = packetQueue.poll() ?: break
             if (notice.detail.startsWith("chat:") || notice.detail.startsWith("left:")) {
                 val translatedDeparture = notice.detail.startsWith("left:")
@@ -236,11 +235,10 @@ class DonutPresenceWatch : DonutPresenceModule("Donut Presence Watch") {
                 else -> Unit
             }
         }
-        while (packetQueue.size > 4096) packetQueue.poll()
     }
 
     private fun processGameModes(network: ClientPacketListener, selfId: UUID) {
-        while (true) {
+        for (processed in 0 until 256) {
             val change = gameModes.poll() ?: break
             if (change.id == selfId) continue
             val info = network.getPlayerInfo(change.id) ?: continue
@@ -262,7 +260,7 @@ class DonutPresenceWatch : DonutPresenceModule("Donut Presence Watch") {
     }
 
     private fun processHints(network: ClientPacketListener, selfId: UUID) {
-        while (true) {
+        for (processed in 0 until 512) {
             val hint = hints.poll() ?: break
             when (hint.kind) {
                 HintKind.TAB_ORDER, HintKind.TAB_REMOVED -> tabMoves.addLast(hint)

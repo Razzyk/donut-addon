@@ -1,10 +1,27 @@
 package dev.donut.addon.expansion.building
 
 import dev.donut.addon.expansion.automation.core.InventorySlotValue
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.Vec3
+import net.minecraft.world.phys.shapes.Shapes
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class AreaMinerPlanTest {
+    @Test
+    fun `a ray reaching the face continues far enough for the native shape to register it`() {
+        val position = BlockPos.ZERO
+        val top = Vec3(0.5, 1.0, 0.5)
+        val eye = Vec3(0.5, 3.0, 0.5)
+        val cube = Shapes.block()
+
+        assertNull(cube.clip(eye, top, position))
+        val hit = cube.clip(eye, AreaMiningRules.pastFace(top, Direction.UP), position)
+        assertEquals(position, hit?.blockPos)
+        assertEquals(Direction.UP, hit?.direction)
+    }
+
     @Test
     fun `parses and normalizes inclusive corners with a configured volume ceiling`() {
         assertEquals(GridCell(-2, 4, 9), AreaBounds.parse(" -2  4 9 "))

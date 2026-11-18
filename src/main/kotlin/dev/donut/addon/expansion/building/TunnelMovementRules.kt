@@ -1,6 +1,13 @@
 package dev.donut.addon.expansion.building
 
 import net.minecraft.core.Direction
+import net.minecraft.core.BlockPos
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.level.ClipContext
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.HitResult
+import net.ccbluex.liquidbounce.utils.aiming.data.Rotation
 
 import kotlin.math.hypot
 
@@ -182,6 +189,46 @@ internal object TunnelMiningAimRules {
         if (!varied || percentRoll >= 30) return null
         return (yawGaussian * 0.35).toFloat() to (pitchGaussian * 0.35 * 0.7).toFloat()
     }
+}
+
+/** Ray-tests the target with the rotation already sent to the server, preserving native block occlusion. */
+internal object TunnelMiningRayRules {
+    fun hit(level: Level, entity: Entity, rotation: Rotation, target: BlockPos, reach: Double): BlockHitResult? {
+        if (!reach.isFinite() || reach <= 0.0) return null
+        val eye = entity.eyePosition
+        val end = eye.add(rotation.directionVector.scale(reach))
+        val hit = level.clip(ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, entity))
+            as? BlockHitResult ?: return null
+        return hit.takeIf { it.type == HitResult.Type.BLOCK && it.blockPos == target }
+    }
+}
+
+/** Identifies the world and player that own an active tunnel break across vanilla idle-attack ticks. */
+internal class TunnelMiningLease {
+    private var ownerWorld: Any? = null
+    private var ownerPlayer: Any? = null
+    private var ownerTarget: BlockPos? = null
+
+    fun acquire(world: Any, player: Any, target: BlockPos) {
+        ownerWorld = world
+        ownerPlayer = player
+        ownerTarget = target.immutable()
+    }
+
+    fun shouldCancelStop(world: Any?, player: Any?, target: BlockPos?, isDestroyingTarget: Boolean): Boolean =
+        isDestroyingTarget && world != null && player != null && target != null &&
+            world === ownerWorld && player === ownerPlayer && target == ownerTarget
+
+    fun release() {
+        ownerWorld = null
+        ownerPlayer = null
+        ownerTarget = null
+    }
+}
+
+internal object TunnelNoticeRules {
+    fun mayNotify(lastNoticeTick: Long, currentTick: Long, minimumGapTicks: Long): Boolean =
+        minimumGapTicks <= 0L || lastNoticeTick == Long.MIN_VALUE || currentTick - lastNoticeTick >= minimumGapTicks
 }
 
 internal object TunnelDriftRules {

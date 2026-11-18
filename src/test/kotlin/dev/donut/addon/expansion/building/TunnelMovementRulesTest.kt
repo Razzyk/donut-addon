@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import net.minecraft.core.Direction
+import net.minecraft.core.BlockPos
 
 class TunnelMovementRulesTest {
     @Test
@@ -120,5 +121,50 @@ class TunnelMovementRulesTest {
         assertEquals(null, TunnelMiningAimRules.wobbleRotation(true, 30, 1.0, 1.0))
         assertEquals(null, TunnelMiningAimRules.wobbleRotation(false, 0, 1.0, 1.0))
         assertEquals(0.35f to -0.245f, TunnelMiningAimRules.wobbleRotation(true, 29, 1.0, -1.0))
+    }
+
+    @Test
+    fun `owned tunnel breaks survive vanilla idle stops but release for another player or world`() {
+        val lease = TunnelMiningLease()
+        val world = Any()
+        val player = Any()
+        val otherPlayer = Any()
+        val otherWorld = Any()
+        var destroying = false
+        var progress = 0
+
+        // Minimal headless game-mode fixture for Minecraft's continueAttack(false) branch:
+        // an uncancelled stop clears both its active flag and partial progress.
+        val target = BlockPos(4, 5, 6)
+        fun vanillaStop(worldNow: Any, playerNow: Any, targetNow: BlockPos) {
+            if (!lease.shouldCancelStop(worldNow, playerNow, targetNow, destroying)) {
+                destroying = false
+                progress = 0
+            }
+        }
+
+        destroying = true // startDestroyBlock succeeded
+        lease.acquire(world, player, target)
+        repeat(5) {
+            vanillaStop(world, player, target)
+            assertTrue(destroying)
+            progress++ // continueDestroyBlock on the following tunnel tick
+        }
+        assertEquals(5, progress)
+        assertFalse(lease.shouldCancelStop(otherWorld, player, target, destroying))
+        assertFalse(lease.shouldCancelStop(world, otherPlayer, target, destroying))
+        assertFalse(lease.shouldCancelStop(world, player, target.above(), destroying))
+
+        lease.release() // intentional stop or module disable clears ownership before stopDestroyBlock
+        vanillaStop(world, player, target)
+        assertFalse(destroying)
+        assertEquals(0, progress)
+    }
+
+    @Test
+    fun `first missing-flag notice is not suppressed by sentinel subtraction overflow`() {
+        assertTrue(TunnelNoticeRules.mayNotify(Long.MIN_VALUE, 1L, 600L))
+        assertFalse(TunnelNoticeRules.mayNotify(10L, 609L, 600L))
+        assertTrue(TunnelNoticeRules.mayNotify(10L, 610L, 600L))
     }
 }

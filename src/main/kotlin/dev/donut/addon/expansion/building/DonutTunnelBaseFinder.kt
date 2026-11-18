@@ -39,8 +39,12 @@ import dev.donut.addon.expansion.automation.core.MenuSnapshot
 import dev.donut.addon.expansion.automation.core.SessionStamp
 import dev.donut.addon.expansion.automation.core.SlotSnapshot
 import dev.donut.addon.expansion.search.SearchFeatures
+import dev.donut.addon.navigation.DonutNavigationBridge
+import dev.donut.addon.navigation.NavigationBackend
+import dev.donut.addon.navigation.NavigationStatus
 import net.ccbluex.liquidbounce.config.types.list.Tagged
 import net.ccbluex.liquidbounce.event.events.GameTickEvent
+import net.ccbluex.liquidbounce.event.events.CancelBlockBreakingEvent
 import net.ccbluex.liquidbounce.event.events.MovementInputEvent
 import net.ccbluex.liquidbounce.event.events.PacketEvent
 import net.ccbluex.liquidbounce.event.events.RotationUpdateEvent
@@ -53,6 +57,7 @@ import net.ccbluex.liquidbounce.render.engine.type.Color4b
 import net.ccbluex.liquidbounce.render.withPositionRelativeToCamera
 import net.ccbluex.liquidbounce.utils.block.SwingMode
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
+import net.ccbluex.liquidbounce.injection.mixins.minecraft.network.MixinMultiPlayerGameModeAccessor
 import net.ccbluex.liquidbounce.utils.aiming.RotationTarget
 import net.ccbluex.liquidbounce.utils.aiming.data.Rotation
 import net.ccbluex.liquidbounce.utils.aiming.features.MovementCorrection
@@ -230,6 +235,7 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     private var miningAimV = 0.5
     private var breakReactionTicks = -1
     private var breaking = false
+    private val miningLease = TunnelMiningLease()
     private var breakTicks = 0
     private var streaming = false
     private var streamTarget: BlockPos? = null
@@ -237,6 +243,7 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     private var decidedStreamHead: BlockPos? = null
     private var oldWayBlocksLeft = 0
     private val walkProgress = TunnelWalkProgress()
+    private val nativeWalkProgress = TunnelWalkProgress(maxUnchangedTicks = 200)
     private var standTarget: BlockPos? = null
     private var standSpot: Vec3? = null
     private var standVaried = false
@@ -752,7 +759,7 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private fun missingFlagSource(id: String) {
-        if (tick - lastFlagNotice < 600L) return
+        if (!TunnelNoticeRules.mayNotify(lastFlagNotice, tick, 600L)) return
         lastFlagNotice = tick
         val name = if (id == "sus") "Sus Chunk Finder" else "Better Sus Chunk"
         tell("$name is not available; that target source is skipped.", true)
@@ -2120,7 +2127,7 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
             }
             TunnelWalkProgress.State.ARRIVED -> Unit
         }
-        val requestedFace = if (cellSize == 3) Direction.UP else direction.opposite
+        val requestedFace = if (cellSize == 3 && pos.y == tunnelY) Direction.UP else direction.opposite
         if (targetBlock != pos) {
             if (nextRandom(100) == 0) {
                 settleUntilTick = tick + nextLognormalTicks(20.0, 0.5, 8, 100)
@@ -2136,18 +2143,16 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
             variedMiningAim = TunnelMiningAimRules.variedAim(nextRandom(100))
             miningAimU = TunnelMiningAimRules.aimCoordinate(nextGaussian(), variedMiningAim)
             miningAimV = TunnelMiningAimRules.aimCoordinate(nextGaussian(), variedMiningAim)
-        } else if (targetFace != requestedFace) {
-            stopBreaking()
-            targetBlock = pos
-            breakTicks = 0
-            breakReactionTicks = -1
-            targetFace = requestedFace
-            variedMiningAim = TunnelMiningAimRules.variedAim(nextRandom(100))
-            miningAimU = TunnelMiningAimRules.aimCoordinate(nextGaussian(), variedMiningAim)
-            miningAimV = TunnelMiningAimRules.aimCoordinate(nextGaussian(), variedMiningAim)
         }
         aimTarget = blockFaceAimPoint(level, pos, targetFace, miningAimU, miningAimV) ?: Vec3.atCenterOf(pos)
         val gameMode = mc.gameMode ?: return
+        if (hasForeignBreak(gameMode, pos)) {
+            if (breaking) forgetOwnedBreak()
+            return
+        }
+        if (breaking && !isDestroyingTarget(gameMode, pos)) {
+            forgetOwnedBreak()
+        }
         if (level.getBlockState(pos).isAir) {
             stopBreaking()
             targetBlock = null
@@ -2156,13 +2161,19 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
             lingering = false
             return
         }
-        val hit = mc.hitResult as? net.minecraft.world.phys.BlockHitResult
-        if (hit?.type != net.minecraft.world.phys.HitResult.Type.BLOCK || hit.blockPos != pos || hit.direction != targetFace) {
+        val hit = TunnelMiningRayRules.hit(
+            level, player, RotationManager.serverRotation, pos, player.blockInteractionRange().toDouble(),
+        )
+        if (hit == null) {
             breakReactionTicks = -1
             breakTicks++
             if (breakTicks > 100) recordBreakFailure(next, pos)
             return
         }
+        // Use the exact visible face reached by the server rotation. A 3x3 head block's top face
+        // is hidden from a floor-level stand, so its front face is the one vanilla can mine.
+        targetFace = hit.direction
+        aimTarget = blockFaceAimPoint(level, pos, targetFace, miningAimU, miningAimV) ?: aimTarget
         if (!breaking) {
             if (selectHotbarTool(player, requireShard = cellSize == 3)) return
             if (breakReactionTicks < 0) {
@@ -2173,8 +2184,9 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
                 breakReactionTicks--
                 return
             }
-            if (gameMode.startDestroyBlock(pos, targetFace)) {
+            if (gameMode.startDestroyBlock(pos, hit.direction)) {
                 breaking = true
+                miningLease.acquire(level, player, pos)
                 breakTicks = 0
                 SwingMode.DO_NOT_HIDE.swing(InteractionHand.MAIN_HAND)
             } else {
@@ -2182,7 +2194,7 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
             }
         } else {
             applyMiningWobble(player, level, pos)
-            if (gameMode.continueDestroyBlock(pos, targetFace)) SwingMode.DO_NOT_HIDE.swing(InteractionHand.MAIN_HAND)
+            if (gameMode.continueDestroyBlock(pos, hit.direction)) SwingMode.DO_NOT_HIDE.swing(InteractionHand.MAIN_HAND)
             breakTicks++
             if (breakTicks > 100) {
                 recordBreakFailure(next, pos)
@@ -2192,6 +2204,8 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
 
     private fun startTunnelHop(spot: BlockPos, through: Boolean, advanceRoute: Boolean) {
         if (hopTask != null) return
+        DonutNavigationBridge.cancel(this)
+        nativeWalkProgress.reset()
         endStraightStream()
         stopBreaking()
         walkProgress.reset()
@@ -2313,8 +2327,9 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
         val jitter = TunnelMiningAimRules.wobbleRotation(
             variedMiningAim, nextRandom(100), nextGaussian(), nextGaussian(),
         ) ?: return
-        val yaw = player.yRot + jitter.first
-        val pitch = player.xRot + jitter.second
+        val serverRotation = RotationManager.serverRotation
+        val yaw = serverRotation.yaw + jitter.first
+        val pitch = serverRotation.pitch + jitter.second
         val eye = player.eyePosition
         val end = eye.add(Vec3.directionFromRotation(pitch, yaw).scale(player.blockInteractionRange().toDouble()))
         val hit = level.clip(ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player)) as? BlockHitResult
@@ -2325,6 +2340,35 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private fun moveToward(level: ClientLevel, player: LocalPlayer, destination: Vec3, lookAt: Vec3): TunnelWalkProgress.State {
+        val navigation = DonutNavigationBridge.update(this, level, destination, 0.35)
+        if (navigation.backend == NavigationBackend.NATIVE) {
+            walkTarget = null
+            mc.options.keyJump.setDown(false)
+            if (navigation.status == NavigationStatus.ARRIVED) {
+                nativeWalkProgress.reset()
+                walkProgress.reset()
+                return TunnelWalkProgress.State.ARRIVED
+            }
+            if (navigation.status in setOf(
+                    NavigationStatus.INPUT_PAUSED,
+                    NavigationStatus.CONFLICT,
+                    NavigationStatus.WORLD_UNAVAILABLE,
+                    NavigationStatus.PREEMPTED,
+                )) {
+                nativeWalkProgress.reset()
+                walkProgress.reset()
+                return TunnelWalkProgress.State.MOVING
+            }
+            val state = nativeWalkProgress.observe(destination.x, destination.z, player.x, player.z)
+            if (state == TunnelWalkProgress.State.STALLED) {
+                DonutNavigationBridge.cancel(this)
+                nativeWalkProgress.reset()
+                return TunnelWalkProgress.State.STALLED
+            }
+            walkProgress.reset()
+            return TunnelWalkProgress.State.MOVING
+        }
+        nativeWalkProgress.reset()
         val state = walkProgress.observe(destination.x, destination.z, player.x, player.z)
         when (state) {
             TunnelWalkProgress.State.MOVING -> {
@@ -2503,22 +2547,51 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
         }
         if (feetPending) return true
 
-        val hit = mc.hitResult as? net.minecraft.world.phys.BlockHitResult
-        if (hit?.type == net.minecraft.world.phys.HitResult.Type.BLOCK && hit.blockPos == head) {
-            val gameMode = mc.gameMode ?: return true
-            if (targetBlock != head) {
-                stopBreaking()
-                targetBlock = head
-                targetFace = hit.direction
-                if (gameMode.startDestroyBlock(head, hit.direction)) {
-                    breaking = true
-                    SwingMode.DO_NOT_HIDE.swing(InteractionHand.MAIN_HAND)
-                }
-            } else if (breaking && gameMode.continueDestroyBlock(head, targetFace)) {
+        val hit = TunnelMiningRayRules.hit(
+            level, player, RotationManager.serverRotation, head, player.blockInteractionRange().toDouble(),
+        )
+        val gameMode = mc.gameMode ?: return true
+        if (hasForeignBreak(gameMode, head)) {
+            if (breaking) forgetOwnedBreak()
+            return true
+        }
+        if (breaking && !isDestroyingTarget(gameMode, head)) forgetOwnedBreak()
+
+        if (targetBlock != head) {
+            stopBreaking()
+            targetBlock = head
+            breakTicks = 0
+            targetFace = hit?.direction ?: way.opposite
+        }
+        if (hit == null) {
+            if (++breakTicks > 100) {
+                recordBreakFailure(next, head)
+                endStraightStream()
+            }
+            return true
+        }
+
+        targetFace = hit.direction
+        if (!breaking) {
+            if (gameMode.startDestroyBlock(head, hit.direction)) {
+                breaking = true
+                miningLease.acquire(level, player, head)
+                breakTicks = 0
+                SwingMode.DO_NOT_HIDE.swing(InteractionHand.MAIN_HAND)
+            } else if (++breakTicks > 100) {
+                recordBreakFailure(next, head)
+                endStraightStream()
+            }
+        } else {
+            if (gameMode.continueDestroyBlock(head, hit.direction)) {
                 SwingMode.DO_NOT_HIDE.swing(InteractionHand.MAIN_HAND)
             }
-            streamTarget = head.immutable()
+            if (++breakTicks > 100) {
+                recordBreakFailure(next, head)
+                endStraightStream()
+            }
         }
+        streamTarget = head.immutable()
         return true
     }
 
@@ -2593,10 +2666,12 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private fun clearStandPlan() {
+        DonutNavigationBridge.cancel(this)
         standTarget = null
         standSpot = null
         standVaried = false
         walkProgress.reset()
+        nativeWalkProgress.reset()
     }
 
     private fun recordBreakFailure(cell: TunnelRoutePlanner.Cell, pos: BlockPos) {
@@ -2921,6 +2996,7 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private fun releaseActions() {
+        DonutNavigationBridge.cancel(this)
         runCatching {
             mc.options.keyUse.setDown(false)
             mc.options.keyUp.setDown(false)
@@ -2936,17 +3012,26 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
         walkTarget = null
         aimTarget = null
         walkProgress.reset()
+        nativeWalkProgress.reset()
         streaming = false
         streamTarget = null
-        if (breaking && worldIdentity != null && worldIdentity === mc.level && mc.player != null) {
-            runCatching { mc.gameMode?.stopDestroyBlock() }
-        }
-        abandonBreaking()
+        stopBreaking()
     }
 
     private fun stopBreaking() {
-        if (breaking) runCatching { mc.gameMode?.stopDestroyBlock() }
+        val target = targetBlock
+        val gameMode = if (breaking && target != null && worldIdentity != null && worldIdentity === mc.level) {
+            mc.gameMode?.takeIf {
+                miningLease.shouldCancelStop(mc.level, mc.player, target, isDestroyingTarget(it, target))
+            }
+        } else null
+        abandonBreaking()
+        if (gameMode != null) runCatching { gameMode.stopDestroyBlock() }
+    }
+
+    private fun forgetOwnedBreak() {
         breaking = false
+        miningLease.release()
         breakTicks = 0
         breakReactionTicks = -1
     }
@@ -2954,11 +3039,37 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     /** Drops local break ownership without sending a stop packet into a changed or absent world. */
     private fun abandonBreaking() {
         breaking = false
+        miningLease.release()
         breakTicks = 0
         breakReactionTicks = -1
     }
 
+    @Suppress("unused")
+    private val preserveOwnedBreak = handler<CancelBlockBreakingEvent> { event ->
+        val target = targetBlock
+        val gameMode = mc.gameMode
+        if (breaking && worldIdentity === mc.level && target != null && gameMode != null &&
+            miningLease.shouldCancelStop(mc.level, mc.player, target, isDestroyingTarget(gameMode, target))) {
+            event.cancelEvent()
+        }
+    }
+
+    private fun isDestroyingTarget(
+        gameMode: net.minecraft.client.multiplayer.MultiPlayerGameMode,
+        target: BlockPos,
+    ): Boolean {
+        if (!gameMode.isDestroying) return false
+        return (gameMode as MixinMultiPlayerGameModeAccessor).`liquid_bounce$getDestroyBlockPos`() == target
+    }
+
+    private fun hasForeignBreak(
+        gameMode: net.minecraft.client.multiplayer.MultiPlayerGameMode,
+        target: BlockPos,
+    ): Boolean = gameMode.isDestroying &&
+        !miningLease.shouldCancelStop(mc.level, mc.player, target, isDestroyingTarget(gameMode, target))
+
     private val rotationHandler = handler<RotationUpdateEvent> {
+        if (DonutNavigationBridge.shouldYieldLocalControl(this)) return@handler
         val player = mc.player ?: return@handler
         val rotation = when {
             eating -> Rotation(player.yRot, -75f)
@@ -2982,6 +3093,7 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private val movementHandler = handler<MovementInputEvent> { event ->
+        if (DonutNavigationBridge.shouldYieldLocalControl(this)) return@handler
         if (mc.gui.screen() != null) return@handler
         val target = walkTarget ?: return@handler
         val player = mc.player ?: return@handler

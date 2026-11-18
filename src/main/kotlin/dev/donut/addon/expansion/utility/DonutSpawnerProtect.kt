@@ -1,23 +1,31 @@
 package dev.donut.addon.expansion.utility
 
 import net.ccbluex.liquidbounce.event.events.GameTickEvent
+import net.ccbluex.liquidbounce.event.events.CancelBlockBreakingEvent
 import net.ccbluex.liquidbounce.event.events.MovementInputEvent
 import net.ccbluex.liquidbounce.event.events.PacketEvent
 import net.ccbluex.liquidbounce.event.events.TransferOrigin
 import net.ccbluex.liquidbounce.event.handler
+import net.ccbluex.liquidbounce.injection.mixins.minecraft.network.MixinMultiPlayerGameModeAccessor
 import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.input.InputTracker.isPressedOnAny
 import net.ccbluex.liquidbounce.utils.movement.DirectionalInput
+import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.multiplayer.ClientPacketListener
+import net.minecraft.client.player.LocalPlayer
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.BlockPos
-import net.minecraft.core.Direction
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
+import net.minecraft.network.chat.Component
 import net.minecraft.world.InteractionHand
-import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.inventory.ContainerInput
+import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.item.Items
+import net.minecraft.world.level.ClipContext
 import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 import java.net.URI
 import java.net.http.HttpClient
@@ -27,6 +35,7 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.atan2
@@ -38,6 +47,7 @@ import kotlin.math.sqrt
 /** Reacts to nearby removal evidence, collects exposed spawners, and stores them in ender chests. */
 class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collects nearby spawners after repeated local block-removal evidence; nearby players only trigger optional webhook notices.") {
     private enum class Phase { WATCHING, COLLECTING, WALKING_TO_CHEST, OPENING_CHEST, DEPOSITING }
+    private data class PendingBlockUpdate(val pos: BlockPos, val state: BlockState, val session: Long)
 
     private val targetStacks by int("Stack To Deposit", 35, 1..35)
     private val triggerRange by float("Trigger Range", 64f, 16f..128f)
@@ -50,12 +60,17 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
     private val webhookUrl by text("Webhook URL", "").doNotIncludeAlways()
 
     private val evidence = SpawnerTriggerLedger()
+    private val pendingBlockUpdates = BoundedSpawnerUpdateInbox<PendingBlockUpdate>(1_024)
     private val trustedNames = ConcurrentHashMap.newKeySet<String>()
     private val webClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
     private val worker = Executors.newSingleThreadExecutor { task -> Thread(task, "Donut spawner alerts").apply { isDaemon = true } }
     private val webhookGeneration = AtomicLong()
+    @Volatile private var sessionGeneration = 0L
     private var phase = Phase.WATCHING
     private var activeWorld: Any? = null
+    private var miningWorld: Any? = null
+    private var depositMenu: ChestMenu? = null
+    private var depositMenuId: Int? = null
     private var knownPlayers = emptySet<UUID>()
     private var suspiciousBreaks = 0
     private var targetBlock: BlockPos? = null
@@ -86,10 +101,14 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
     }
 
     private fun reset() {
+        sessionGeneration++
+        pendingBlockUpdates.clear()
         webhookGeneration.incrementAndGet()
         stopMining()
         phase = Phase.WATCHING
         activeWorld = null
+        miningWorld = null
+        clearDepositMenu()
         knownPlayers = emptySet()
         evidence.clear()
         suspiciousBreaks = 0
@@ -106,12 +125,32 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
 
     @Suppress("unused")
     private val blockUpdates = handler<PacketEvent> { event ->
-        if (event.origin != TransferOrigin.INCOMING || !detectUpdates || phase != Phase.WATCHING) return@handler
+        if (event.origin != TransferOrigin.INCOMING) return@handler
         val packet = event.packet as? ClientboundBlockUpdatePacket ?: return@handler
-        val level = mc.level ?: return@handler
-        val player = mc.player ?: return@handler
-        val old = level.getBlockState(packet.pos)
-        val pos = packet.pos
+        val update = PendingBlockUpdate(packet.pos.immutable(), packet.blockState, sessionGeneration)
+        val ticket = pendingBlockUpdates.offer(update) ?: return@handler
+        try {
+            // PacketEvent runs before vanilla queues this packet's client-thread application.
+            mc.execute {
+                val queued = pendingBlockUpdates.take(ticket) ?: return@execute
+                if (queued.session != sessionGeneration || !enabled || !detectUpdates || phase != Phase.WATCHING) return@execute
+                val level = mc.level ?: return@execute
+                val player = mc.player ?: return@execute
+                if (activeWorld !== level) return@execute
+                observeBlockUpdate(level, player, queued)
+            }
+        } catch (_: RejectedExecutionException) {
+            pendingBlockUpdates.take(ticket)
+        }
+    }
+
+    private fun observeBlockUpdate(
+        level: net.minecraft.client.multiplayer.ClientLevel,
+        player: net.minecraft.client.player.LocalPlayer,
+        update: PendingBlockUpdate,
+    ) {
+        val old = level.getBlockState(update.pos)
+        val pos = update.pos
         val dx = player.x - pos.x
         val dz = player.z - pos.z
         val horizontal = sqrt(dx * dx + dz * dz)
@@ -121,7 +160,7 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
                 trustedNames.contains(other.gameProfile.name.lowercase())
         }
         val thresholdReached = evidence.observe(
-            System.nanoTime(), old.isAir, protected, packet.blockState.isAir, pos.y,
+            System.nanoTime(), old.isAir, protected, update.state.isAir, pos.y,
             horizontal, triggerRange.toDouble(), player.position().distanceTo(Vec3.atCenterOf(pos)),
             nearTrusted, TimeUnit.SECONDS.toNanos(evidenceWindow.toLong()), evidenceThreshold,
         )
@@ -140,6 +179,18 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
         if (phase == Phase.WALKING_TO_CHEST) {
             event.directionalInput = DirectionalInput.FORWARDS
             event.sneak = true
+        }
+    }
+
+    @Suppress("unused")
+    private val preserveMining = handler<CancelBlockBreakingEvent> { event ->
+        val world = mc.level
+        val gameMode = mc.gameMode
+        val target = miningTarget
+        if (enabled && phase == Phase.COLLECTING && target != null &&
+            miningWorld != null && miningWorld === world && activeWorld === world &&
+            gameMode != null && isDestroyingTarget(gameMode, target)) {
+            event.cancelEvent()
         }
     }
 
@@ -166,7 +217,7 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
             val stack = player.inventory.getItem(slot)
             if (stack.item == Items.SPAWNER) stack.count else 0
         }
-        if (spawnerCount >= targetStacks * 64 || inventoryNeedsSpace()) {
+        if (phase == Phase.COLLECTING && (spawnerCount >= targetStacks * 64 || inventoryNeedsSpace())) {
             stopMining()
             if (targetChest == null || scanTicks % 20 == 0) targetChest = findNearest(Blocks.ENDER_CHEST, 4)
             if (targetChest == null) {
@@ -209,6 +260,7 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
 
     private fun collectTick() {
         val player = mc.player ?: return
+        val level = mc.level ?: return
         if (++scanTicks % 20 == 0 || targetBlock == null || mc.level?.getBlockState(targetBlock!!)?.block != Blocks.SPAWNER) {
             targetBlock = findNearest(Blocks.SPAWNER, 16)
         }
@@ -222,19 +274,33 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
             return
         }
         idleTicks = 0
-        if (player.position().distanceTo(Vec3.atCenterOf(target)) > breakRange) {
+        if (player.position().distanceTo(Vec3.atCenterOf(target)) > breakRange || level.getBlockState(target).block != Blocks.SPAWNER) {
             stopMining()
             face(target)
             return
         }
         face(target)
-        val gameMode = mc.gameMode ?: return
-        if (miningTarget != target) {
+        val hit = currentBlockHit(player, level)
+        if (hit == null || hit.type != HitResult.Type.BLOCK || hit.blockPos != target) {
             stopMining()
-            gameMode.startDestroyBlock(target, Direction.UP)
-            miningTarget = target.immutable()
+            return
         }
-        gameMode.continueDestroyBlock(target, Direction.UP)
+        val gameMode = mc.gameMode ?: return
+        if (miningTarget != target || miningWorld !== level || !isDestroyingTarget(gameMode, target)) {
+            stopMining()
+            val started = gameMode.startDestroyBlock(target, hit.direction)
+            if (!started || !isDestroyingTarget(gameMode, target)) {
+                stopMining()
+                return
+            }
+            miningTarget = target.immutable()
+            miningWorld = level
+        }
+        gameMode.continueDestroyBlock(target, hit.direction)
+        if (!isDestroyingTarget(gameMode, target)) {
+            miningTarget = null
+            miningWorld = null
+        }
     }
 
     private fun walkToChest() {
@@ -251,14 +317,27 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
         val player = mc.player ?: return
         val chest = targetChest ?: run { phase = Phase.COLLECTING; return }
         if (player.containerMenu != player.inventoryMenu) {
-            phase = Phase.DEPOSITING
-            menuTicks = 0
+            val menu = player.containerMenu as? ChestMenu
+            if (menu != null && isExpectedEnderChestMenu(player, menu)) {
+                depositMenu = menu
+                depositMenuId = menu.containerId
+                phase = Phase.DEPOSITING
+                menuTicks = 0
+            } else {
+                phase = Phase.COLLECTING
+                targetChest = null
+                clearDepositMenu()
+            }
             return
         }
+        if (mc.gui.screen() != null) return
+        face(chest)
         val gameMode = mc.gameMode ?: return
         if (menuTicks++ % 12 == 0) {
-            val hit = BlockHitResult(Vec3.atCenterOf(chest), Direction.UP, chest, false)
-            gameMode.useItemOn(player, InteractionHand.MAIN_HAND, hit)
+            val hit = currentBlockHit(player, mc.level ?: return)
+            if (hit != null && hit.type == HitResult.Type.BLOCK && hit.blockPos == chest) {
+                gameMode.useItemOn(player, InteractionHand.MAIN_HAND, hit)
+            }
         }
         if (menuTicks > 200) {
             chat("Ender chest did not open; collection paused with items in your inventory.", this)
@@ -269,10 +348,11 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
 
     private fun depositTick() {
         val player = mc.player ?: return
-        val menu = player.containerMenu
-        if (menu === player.inventoryMenu) {
+        val menu = player.containerMenu as? ChestMenu
+        if (menu == null || menu !== depositMenu || menu.containerId != depositMenuId || !isExpectedEnderChestMenu(player, menu)) {
             phase = Phase.COLLECTING
             targetChest = null
+            clearDepositMenu()
             return
         }
         val spawnerSlot = menu.slots.firstOrNull { slot -> slot.container === player.inventory && slot.item.item == Items.SPAWNER }
@@ -283,6 +363,34 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
         player.closeContainer()
         phase = Phase.COLLECTING
         targetChest = null
+        clearDepositMenu()
+    }
+
+    private fun isExpectedEnderChestMenu(player: LocalPlayer, menu: ChestMenu): Boolean {
+        val chest = targetChest ?: return false
+        val level = mc.level ?: return false
+        val screen = mc.gui.screen() as? AbstractContainerScreen<*> ?: return false
+        val expectedTitle = Component.translatable("container.enderchest").string
+        val reach = player.blockInteractionRange().toDouble()
+        return activeWorld === level && level.getBlockState(chest).block == Blocks.ENDER_CHEST &&
+            player.eyePosition.distanceToSqr(Vec3.atCenterOf(chest)) <= reach * reach &&
+            menu.slots.size == 63 && menu.slots.take(27).none { it.container === player.inventory } &&
+            menu.slots.drop(27).all { it.container === player.inventory } &&
+            screen.menu === menu &&
+            screen.title.string.equals(expectedTitle, ignoreCase = true)
+    }
+
+    private fun clearDepositMenu() {
+        depositMenu = null
+        depositMenuId = null
+    }
+
+    private fun currentBlockHit(player: LocalPlayer, level: ClientLevel): BlockHitResult? {
+        val eye = player.eyePosition
+        val reach = player.blockInteractionRange().toDouble()
+        val end = eye.add(Vec3.directionFromRotation(player.xRot, player.yRot).scale(reach))
+        val hit = level.clip(ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player))
+        return hit as? BlockHitResult
     }
 
     private fun findNearest(block: net.minecraft.world.level.block.Block, radius: Int): BlockPos? {
@@ -317,11 +425,22 @@ class DonutSpawnerProtect : DonutUtilityModule("Donut Spawner Protect", "Collect
     }
 
     private fun stopMining() {
-        val player = mc.player
-        if (miningTarget != null && mc.gameMode?.isDestroying == true) mc.gameMode?.stopDestroyBlock()
+        val owned = miningTarget != null
+        val ownedTarget = miningTarget
+        val ownedWorld = miningWorld
         miningTarget = null
+        miningWorld = null
+        val gameMode = mc.gameMode
+        if (owned && ownedTarget != null && ownedWorld === mc.level && gameMode != null && isDestroyingTarget(gameMode, ownedTarget)) {
+            gameMode.stopDestroyBlock()
+        }
+        val player = mc.player
         if (player != null) mc.options.keyAttack.setDown(mc.options.keyAttack.isPressedOnAny)
     }
+
+    private fun isDestroyingTarget(gameMode: net.minecraft.client.multiplayer.MultiPlayerGameMode, target: BlockPos): Boolean =
+        gameMode.isDestroying &&
+            (gameMode as? MixinMultiPlayerGameModeAccessor)?.`liquid_bounce$getDestroyBlockPos`() == target
 
     private fun notifyWebhook(title: String, detail: String, pos: BlockPos?) {
         val uri = runCatching { URI(webhookUrl.trim()) }.getOrNull() ?: return

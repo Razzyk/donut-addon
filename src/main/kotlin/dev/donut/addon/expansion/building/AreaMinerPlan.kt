@@ -2,12 +2,18 @@ package dev.donut.addon.expansion.building
 
 import java.util.ArrayDeque
 import dev.donut.addon.expansion.automation.core.InventorySlotValue
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.Vec3
 
 internal data class GridCell(val x: Int, val y: Int, val z: Int)
 
 internal enum class AreaSide { DOWN, UP, NORTH, SOUTH, WEST, EAST }
 
 internal object AreaMiningRules {
+    /** Vanilla segment clipping excludes an intersection at the exact end point. */
+    fun pastFace(point: Vec3, face: Direction): Vec3 =
+        point.add(-face.stepX * 0.001, -face.stepY * 0.001, -face.stepZ * 0.001)
+
     fun isMineable(isAir: Boolean, isFluidBlock: Boolean, destroySpeed: Float): Boolean =
         !isAir && !isFluidBlock && destroySpeed >= 0f
 

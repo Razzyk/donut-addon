@@ -28,18 +28,14 @@ import dev.donut.addon.anubis.AnubisEventBridge
 import dev.donut.addon.modules.ModuleDonutSpeedmine
 import dev.donut.addon.modules.ModuleDonutNoJumpDelay
 import dev.donut.addon.expansion.ExpansionFeatures
-import dev.donut.addon.navigation.DonutNavigationBridge
-import dev.donut.addon.security.SilentNetStartupCheck
 
 class DonutAddon : LiquidBounceAddon() {
     override val categories: List<ModuleCategory> = listOf(
         AddonCategories.DONUT, AddonCategories.BASEFINDING, AddonCategories.UTILITY, AddonCategories.MACROS
     )
     override fun onInitialize() {
-        registerListeners(SilentNetStartupCheck)
-        SilentNetStartupCheck.start()
         // Track always-on lifecycle hooks before module registration can fail and trigger rollback.
-        registerListeners(DonutNavigationBridge, *ExpansionFeatures.listeners.toTypedArray())
+        registerListeners(*ExpansionFeatures.listeners.toTypedArray())
         registerModules(
             ModuleAntiLeak,
             ModuleDonutSpeedmine,
@@ -72,8 +68,6 @@ class DonutAddon : LiquidBounceAddon() {
     }
 
     override fun onStopping() {
-        SilentNetStartupCheck.stop()
-        DonutNavigationBridge.stop()
         ExpansionFeatures.shutdown()
     }
 

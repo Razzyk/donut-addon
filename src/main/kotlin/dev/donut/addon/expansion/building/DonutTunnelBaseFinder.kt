@@ -39,9 +39,6 @@ import dev.donut.addon.expansion.automation.core.MenuSnapshot
 import dev.donut.addon.expansion.automation.core.SessionStamp
 import dev.donut.addon.expansion.automation.core.SlotSnapshot
 import dev.donut.addon.expansion.search.SearchFeatures
-import dev.donut.addon.navigation.DonutNavigationBridge
-import dev.donut.addon.navigation.NavigationBackend
-import dev.donut.addon.navigation.NavigationStatus
 import net.ccbluex.liquidbounce.config.types.list.Tagged
 import net.ccbluex.liquidbounce.event.events.GameTickEvent
 import net.ccbluex.liquidbounce.event.events.CancelBlockBreakingEvent
@@ -243,7 +240,6 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     private var decidedStreamHead: BlockPos? = null
     private var oldWayBlocksLeft = 0
     private val walkProgress = TunnelWalkProgress()
-    private val nativeWalkProgress = TunnelWalkProgress(maxUnchangedTicks = 200)
     private var standTarget: BlockPos? = null
     private var standSpot: Vec3? = null
     private var standVaried = false
@@ -2204,8 +2200,6 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
 
     private fun startTunnelHop(spot: BlockPos, through: Boolean, advanceRoute: Boolean) {
         if (hopTask != null) return
-        DonutNavigationBridge.cancel(this)
-        nativeWalkProgress.reset()
         endStraightStream()
         stopBreaking()
         walkProgress.reset()
@@ -2340,35 +2334,6 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private fun moveToward(level: ClientLevel, player: LocalPlayer, destination: Vec3, lookAt: Vec3): TunnelWalkProgress.State {
-        val navigation = DonutNavigationBridge.update(this, level, destination, 0.35)
-        if (navigation.backend == NavigationBackend.NATIVE) {
-            walkTarget = null
-            mc.options.keyJump.setDown(false)
-            if (navigation.status == NavigationStatus.ARRIVED) {
-                nativeWalkProgress.reset()
-                walkProgress.reset()
-                return TunnelWalkProgress.State.ARRIVED
-            }
-            if (navigation.status in setOf(
-                    NavigationStatus.INPUT_PAUSED,
-                    NavigationStatus.CONFLICT,
-                    NavigationStatus.WORLD_UNAVAILABLE,
-                    NavigationStatus.PREEMPTED,
-                )) {
-                nativeWalkProgress.reset()
-                walkProgress.reset()
-                return TunnelWalkProgress.State.MOVING
-            }
-            val state = nativeWalkProgress.observe(destination.x, destination.z, player.x, player.z)
-            if (state == TunnelWalkProgress.State.STALLED) {
-                DonutNavigationBridge.cancel(this)
-                nativeWalkProgress.reset()
-                return TunnelWalkProgress.State.STALLED
-            }
-            walkProgress.reset()
-            return TunnelWalkProgress.State.MOVING
-        }
-        nativeWalkProgress.reset()
         val state = walkProgress.observe(destination.x, destination.z, player.x, player.z)
         when (state) {
             TunnelWalkProgress.State.MOVING -> {
@@ -2666,12 +2631,10 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private fun clearStandPlan() {
-        DonutNavigationBridge.cancel(this)
         standTarget = null
         standSpot = null
         standVaried = false
         walkProgress.reset()
-        nativeWalkProgress.reset()
     }
 
     private fun recordBreakFailure(cell: TunnelRoutePlanner.Cell, pos: BlockPos) {
@@ -2996,7 +2959,6 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private fun releaseActions() {
-        DonutNavigationBridge.cancel(this)
         runCatching {
             mc.options.keyUse.setDown(false)
             mc.options.keyUp.setDown(false)
@@ -3012,7 +2974,6 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
         walkTarget = null
         aimTarget = null
         walkProgress.reset()
-        nativeWalkProgress.reset()
         streaming = false
         streamTarget = null
         stopBreaking()
@@ -3069,7 +3030,6 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
         !miningLease.shouldCancelStop(mc.level, mc.player, target, isDestroyingTarget(gameMode, target))
 
     private val rotationHandler = handler<RotationUpdateEvent> {
-        if (DonutNavigationBridge.shouldYieldLocalControl(this)) return@handler
         val player = mc.player ?: return@handler
         val rotation = when {
             eating -> Rotation(player.yRot, -75f)
@@ -3093,7 +3053,6 @@ object DonutTunnelBaseFinder : ClientModule("Donut Tunnel Base Finder", AddonCat
     }
 
     private val movementHandler = handler<MovementInputEvent> { event ->
-        if (DonutNavigationBridge.shouldYieldLocalControl(this)) return@handler
         if (mc.gui.screen() != null) return@handler
         val target = walkTarget ?: return@handler
         val player = mc.player ?: return@handler

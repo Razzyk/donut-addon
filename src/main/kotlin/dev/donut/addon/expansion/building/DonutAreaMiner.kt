@@ -7,9 +7,6 @@ import dev.donut.addon.expansion.automation.core.InventoryAckTracker
 import dev.donut.addon.expansion.automation.core.InventorySlotValue
 import dev.donut.addon.expansion.automation.core.InventorySyncFrame
 import dev.donut.addon.expansion.automation.core.InventorySwapExpectation
-import dev.donut.addon.navigation.DonutNavigationBridge
-import dev.donut.addon.navigation.NavigationBackend
-import dev.donut.addon.navigation.NavigationStatus
 import net.ccbluex.liquidbounce.config.types.Value
 import net.ccbluex.liquidbounce.event.events.CancelBlockBreakingEvent
 import net.ccbluex.liquidbounce.event.events.GameTickEvent
@@ -122,7 +119,6 @@ object DonutAreaMiner : ClientModule("Donut Area Miner", AddonCategories.DONUT, 
     private var route: List<GridCell> = emptyList()
     private var routeIndex = 0
     private var routeTicks = 0
-    private var nativeGoal: Vec3? = null
     private var skippedCount = 0
     private var minedCount = 0
     private var selectSlotBefore = -1
@@ -399,14 +395,10 @@ object DonutAreaMiner : ClientModule("Donut Area Miner", AddonCategories.DONUT, 
             enabled = false
             return@handler
         }
-        if (processPendingInventorySwap(player, level)) {
-            DonutNavigationBridge.cancel(this)
-            return@handler
-        }
+        if (processPendingInventorySwap(player, level)) return@handler
         if (picking.armed || bounds == null) return@handler
         if (mc.gui.screen() != null && pauseInMenus) {
             stopBreaking()
-            DonutNavigationBridge.cancel(this)
             return@handler
         }
         if (!eating && foodInventoryLease != null) {
@@ -417,12 +409,8 @@ object DonutAreaMiner : ClientModule("Donut Area Miner", AddonCategories.DONUT, 
             restoreXpInventorySlot()
             if (pendingInventorySwap != null || xpInventoryLease != null) return@handler
         }
-        if (handleMending(player)) {
-            DonutNavigationBridge.cancel(this)
-            return@handler
-        }
+        if (handleMending(player)) return@handler
         if (currentTarget == null && route.isEmpty() && !breaking && inventoryCalm(player) && handleFood(player)) return@handler
-        if (updateNativeApproach(player, level)) return@handler
         updateRoute(player)
         if (route.isNotEmpty()) {
             if (++routeTicks > ROUTE_TIMEOUT_TICKS) failCurrentTarget("Could not reach target")
@@ -896,28 +884,7 @@ object DonutAreaMiner : ClientModule("Donut Area Miner", AddonCategories.DONUT, 
         }
     }
 
-    /** Prefer the client navigator for a loaded stand with a visible mining face. */
     private fun beginApproach(player: LocalPlayer, level: ClientLevel, target: GridCell): Boolean {
-        val pos = target.toBlockPos()
-        if (DonutNavigationBridge.available) {
-            val stand = Direction.values().asSequence()
-                .map { pos.relative(it) }
-                .filter { it != player.blockPosition() }
-                .mapNotNull { cell ->
-                    standingSurfaceY(level, cell)?.let { y -> Vec3(cell.x + 0.5, y, cell.z + 0.5) }
-                }
-                .filter { miningShot(player, level, pos, it.add(0.0, player.eyeHeight.toDouble(), 0.0)) != null }
-                .minByOrNull { it.distanceToSqr(player.position()) }
-            if (stand != null) {
-                nativeGoal = stand
-                routeTicks = 0
-                return true
-            }
-        }
-        return beginLegacyApproach(player, level, target)
-    }
-
-    private fun beginLegacyApproach(player: LocalPlayer, level: ClientLevel, target: GridCell): Boolean {
         val path = planApproach(player, level, target) ?: return false
         route = path
         routeIndex = 0
@@ -926,38 +893,9 @@ object DonutAreaMiner : ClientModule("Donut Area Miner", AddonCategories.DONUT, 
     }
 
     private fun clearApproach() {
-        DonutNavigationBridge.cancel(this)
-        nativeGoal = null
         route = emptyList()
         routeIndex = 0
         routeTicks = 0
-    }
-
-    /** Stop walking as soon as the target is reachable, even before reaching the original stand. */
-    private fun updateNativeApproach(player: LocalPlayer, level: ClientLevel): Boolean {
-        val goal = nativeGoal ?: return false
-        val target = currentTarget ?: run {
-            clearApproach()
-            return false
-        }
-        val pos = target.toBlockPos()
-        if (!level.hasChunkAt(pos)) {
-            failCurrentTarget("Target chunk unloaded")
-            return true
-        }
-        if (!isMineable(level.getBlockState(pos), level, pos) || miningShot(player, level, pos) != null) {
-            clearApproach()
-            return false
-        }
-        val result = DonutNavigationBridge.update(this, level, goal, STAND_RADIUS)
-        if (result.status == NavigationStatus.INPUT_PAUSED || result.status == NavigationStatus.CONFLICT) return true
-        if (result.backend == NavigationBackend.LEGACY_FALLBACK_REQUIRED ||
-            result.status == NavigationStatus.ARRIVED || ++routeTicks > ROUTE_TIMEOUT_TICKS
-        ) {
-            clearApproach()
-            if (!beginLegacyApproach(player, level, target)) failCurrentTarget("Could not reach target")
-        }
-        return true
     }
 
     private fun planApproach(
@@ -1679,7 +1617,6 @@ object DonutAreaMiner : ClientModule("Donut Area Miner", AddonCategories.DONUT, 
     private val rotation = handler<RotationUpdateEvent> {
         val player = mc.player ?: return@handler
         if (mc.gui.screen() != null && pauseInMenus) return@handler
-        if (nativeGoal != null && !eating && !mending) return@handler
         val target = currentTarget?.toBlockPos()
         val next = route.getOrNull(routeIndex)
         val rotation = when {

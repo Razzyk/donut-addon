@@ -21,6 +21,8 @@ repositories {
     maven {
         name = "CCBlueX Snapshots"
         url = uri("https://maven.ccbluex.net/snapshots")
+        // LiquidBounce stable has transitive dependencies hosted here.
+        content { excludeModule("net.ccbluex", "liquidbounce") }
     }
     maven {
         name = "Fabric"
@@ -52,19 +54,6 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-// Gradle keeps a resolved snapshot for a day; the client publishes one on every push to nextgen.
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
-}
-
-// Check the release's compiled bytecode against another client, without recompiling it
-// against that client's API and accidentally hiding a binary-incompatible nightly change.
-providers.gradleProperty("liquidbounce_runtime_version").orNull?.let { version ->
-    configurations.named("testRuntimeClasspath") {
-        resolutionStrategy.force("net.ccbluex:liquidbounce:$version")
-    }
 }
 
 tasks.processResources {
